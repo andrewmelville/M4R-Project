@@ -1,0 +1,31 @@
+# This is where I will bring together all the modules of my code project for integrated testing
+
+# 15/10/20 Andrew Melville
+from brownian_motion import walk_generator
+from plotting_functions import series_plot
+from beta_functions import beta_generator
+from models import linear_model_generator
+from plotting_functions import 
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+#%%
+from brownian_motion import walk_generator
+brown = walk_generator(n=10000, d=100)
+
+
+series_plot(brown, 'Random Walk Plot', xlab = 'Value', ylab= 'T')
+
+#%%
+from beta_functions import beta_generator
+test =  beta_generator()
+#%%
+from models import linear_model_generator
+test = linear_model_generator()
+#%%
+import pandas as pd
+import numpy as np
+test = pd.DataFrame(np.ones((2,2)) + [[1,2],[3,4]]) * [[1,1],[1,1]]
+print(test.values.sum(axis = 1))
+
