@@ -1,4 +1,4 @@
-# This file holds different functions to be sed for standardised plotting of 
+# This file holds different functions to be used for standardised plotting of 
 # time series and their analytics
 
 # 15/10/20 Andrew Melville

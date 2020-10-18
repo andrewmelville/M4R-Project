@@ -10,21 +10,68 @@ import numpy as np
 from brownian_motion import walk_generator
 from beta_functions import beta_generator
 
-def linear_model_generator(num_obs = 1000, num_cofactors = 3, noise = 1):
+class model_generator():
     
-    # Generate beta variables
-    beta = beta_generator(n = num_obs, d = num_cofactors)
     
-    # Genearte covariates through brownian motion generator function and taking difference to get
-    # returns data (which is approx normally distributed)
-    covariates = walk_generator(n = num_obs, d = num_cofactors).diff()
+    ## This class holds functions for generating realisations of models and 
+    ## functions for returning information on their specifications
     
-    # Create time series model using covariates
-    # y = XB + E
-    output = (covariates * beta).values.sum(axis = 1) + np.random.normal(loc = 0, scale = noise, size = num_obs)
-    output = pd.DataFrame(output, index = [l for l in range(num_obs)], columns = ['Y'])
-    return output
+    
+    def __init__(self):
+        
+        # Has a linear model been generated yet? No.
+        self.lin_model_made = False
 
+        # Initialise variables that may be asked for as output
+        self.covariates = []
+        self.params = []
+        self.output = []
+    
+    def linear_model(self, num_obs = 1000, num_covariates = 3, noise = 1):
+        
+        ## Generate an observation of a linear model according to the 
+        ## specifications taken as input.
+        
+        ## This linear model defaults to 1000 observartions with 3 covariates,
+        ## and noise variance of 1.
+    
+        # Generate beta variables
+        self.params = beta_generator(n = num_obs, d = num_covariates)
+        
+        # Genearte covariates through brownian motion generator function and taking difference to get
+        # returns data (which is approx normally distributed)
+        self.covariates = walk_generator(n = num_obs, d = num_covariates).diff(periods=1).fillna(method='backfill')
+        
+        # Create time series model using covariates and beta series
+        # y = XB + E
+        self.output = (self.covariates * self.params).values.sum(axis = 1) + np.random.normal(loc = 0, scale = noise, size = num_obs)
+        self.output = pd.DataFrame(self.output, index = [l for l in range(num_obs)], columns = ['Y'])
+        
+        # Confirm we just made a linear model
+        self.lin_model_made = True
+        
+        return self.output
+    
+    def params(self):
+        
+        # Return the series of beta values that the model used to generate the
+        # realisation
+        
+        if self.lin_model_made == True:
+            return self.params
+        else:
+            print('No linear model generated yet')
+        
+    def covariates(self):
+        
+        # Return the series of beta values that the model used to generate the
+        # realisation
+        
+        if self.lin_model_made == True:
+            return self.covariates
+        else:
+            print('No linear model generated yet')
+        
 
 ## Notes
 

@@ -16,10 +16,10 @@ def beta_generator(n = 1000, d = 3):
     for j in range(d):
         
         # Creat array of linspace
-        line = np.array(range(n))
+        line = np.linspace(0,n,n)
         
         # Generate random periodic function for each beta
-        beta_df[j] = np.sin(((j+10)/d)*line)
+        beta_df[j] = np.sin((2*np.pi*line)*(j+1)/n)
     
     return beta_df
 

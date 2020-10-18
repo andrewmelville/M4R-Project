@@ -4,8 +4,9 @@
 from brownian_motion import walk_generator
 from plotting_functions import series_plot
 from beta_functions import beta_generator
-from models import linear_model_generator
-from plotting_functions import 
+from models import model_generator
+from plotting_functions import series_plot
+from rolling_functions import Rolling_LR
 
 import numpy as np
 import pandas as pd
@@ -29,3 +30,19 @@ import numpy as np
 test = pd.DataFrame(np.ones((2,2)) + [[1,2],[3,4]]) * [[1,1],[1,1]]
 print(test.values.sum(axis = 1))
 
+
+#%%
+from models import model_generator
+test_model = model_generator()
+
+model = test_model.linear_model(num_obs = 10000)
+betas = test_model.params
+covs = test_model.covariates
+
+#%%
+
+from rolling_functions import Rolling_LR
+
+reg = Rolling_LR()
+
+reg.fit(model, covs, 200)
