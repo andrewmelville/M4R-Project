@@ -14,3 +14,8 @@ so that different relationships between covariates and outcome can be modelled
 easily.
 
 Andrew, 15/10/20
+
+
+Added Rolling Linear Regression functions in rolling_functions.py, and a gif making
+fucntion in plotting_functions.py that saves a gif explaining what data the rolling fit
+used to estimate the rolling betas.

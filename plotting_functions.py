@@ -21,25 +21,30 @@ def series_plot(data, title, xlab = 'Index', ylab = 'Value', legend = False):
     if legend == True:
         plt.legend()
 
-def rolling_beta_plot(covariates, coefficients, output, lookback, gifname, frames = 0.25, freq = 100):
+def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, lookback, gifname, frames = 0.25, freq = 100):
     
     images = []
     
-    for i in range(len(coefficients)-lookback):
+    for i in range(len(true_coefficients)-lookback):
         
         if (i+lookback) % freq == 0:
     
-            x = np.linspace(-100, 100, num=100)
-            y =  float(coefficients.loc[i+lookback]) * x
+            x_true = np.linspace(-100, 100, num=100)
+            y_true =  float(true_coefficients.loc[i+lookback]) * x_true
+            
+            x_est = np.linspace(-100, 100, num=100)
+            y_est =  float(est_coefficients.loc[i+lookback]) * x_est
     
             fig, ax = plt.subplots(figsize=(10,10))
             ax.scatter(covariates[i:i+20], output[i:i+lookback])
-            ax.plot(x, y, 'r')
+            ax.plot(x_true, y_true, 'r', label = 'True')
+            ax.plot(x_est, y_est, 'g', label = 'Estimated')
             
             ax.grid()
             ax.set(xlabel = 'Simulated Currency Returns', ylabel = 'Simulated Model Output',
                    title = 'True Beta through time')
-    
+            ax.legend()
+            
             # IMPORTANT ANIMATION CODE HERE
             # Used to keep the limits constant
             ax.set_ylim(min(output.values), max(output.values))
