@@ -35,7 +35,7 @@ print(test.values.sum(axis = 1))
 from models import model_generator
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs = 10000, beta_type = 'sin_correlated')
+model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_correlated')
 betas = test_model.params
 covs = test_model.covariates
 
@@ -45,8 +45,9 @@ from rolling_functions import Rolling_LR
 
 reg = Rolling_LR()
 
-reg.fit(model, covs, 200)
+reg.fit(model, covs, 20)
+
 #%%
-from beta_functions import beta_generator
-gen = beta_generator(number = 10, dimensions = 1, beta_type = 'sin_correlated')
-test = gen()
+from plotting_functions import rolling_beta_plot
+
+rolling_beta_plot(covs, betas, model, 20, 'sinwavebetas')

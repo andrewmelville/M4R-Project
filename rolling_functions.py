@@ -92,7 +92,9 @@ class Rolling_LR():
             self.pred_ts.iloc[t+lookback] = cur_lr.predict(np.array(full_df.iloc[t+lookback,1:]).reshape(1,-1))
             
             # Print progress
-            print('Fitted [{}/{}]'.format(t,full_df.shape[0]-lookback))
+            if t % 10 == 0:
+                print('Fitted [{}/{}]'.format(t,full_df.shape[0]-lookback))
+        
         self.fitted = True
         
         

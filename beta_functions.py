@@ -57,6 +57,21 @@ class beta_generator:
         
         return self.beta_df
     
+    
+    def linear(self):        
+                
+        d, line = self.d, self.line
+        
+        # Loop through dimensions and generate the same beta vector for each
+        for j in range(d):
+            
+            # Generate random periodic function for each beta
+            self.beta_df[j] = 2*line
+        
+        return self.beta_df
+            
+            
+    
 
 
 
