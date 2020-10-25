@@ -50,4 +50,4 @@ reg.fit(model, covs, 20)
 #%%
 from plotting_functions import rolling_beta_plot
 
-rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'sinwavebetas')
+rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'True_Est_Betas')

@@ -21,7 +21,7 @@ def series_plot(data, title, xlab = 'Index', ylab = 'Value', legend = False):
     if legend == True:
         plt.legend()
 
-def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, lookback, gifname, frames = 0.25, freq = 100):
+def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, lookback, gifname, freq = 50):
     
     images = []
     
@@ -58,4 +58,4 @@ def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, l
             images.append(image) 
             
             print('{}/{} Completed'.format(int((i+lookback)/freq), np.floor(len(covariates)/freq)))
-    imageio.mimsave('./Plots/' + gifname + '.gif', images, fps=frames)
+    imageio.mimsave('./Plots/' + gifname + '.gif', images, fps=20)
