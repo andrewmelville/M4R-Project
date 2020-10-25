@@ -23,11 +23,12 @@ class model_generator():
         self.lin_model_made = False
 
         # Initialise variables that may be asked for as output
+        self.beta_type = []
         self.covariates = []
         self.params = []
         self.output = []
     
-    def linear_model(self, num_obs = 1000, num_covariates = 3, noise = 1):
+    def linear_model(self, beta_type = 'sin_range', num_obs = 1000, num_covariates = 3, noise = 1):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
@@ -36,7 +37,8 @@ class model_generator():
         ## and noise variance of 1.
     
         # Generate beta variables
-        self.params = beta_generator(n = num_obs, d = num_covariates)
+        gen = beta_generator(number = num_obs, dimensions = num_covariates, beta_type = beta_type)
+        self.params = gen()
         
         # Genearte covariates through brownian motion generator function and taking difference to get
         # returns data (which is approx normally distributed)
