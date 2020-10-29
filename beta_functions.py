@@ -9,12 +9,13 @@ import numpy as np
 class beta_generator:
     
     
-    def __init__(self, beta_type, number, dimensions):
+    def __init__(self, beta_type, number, dimensions, freq = 10):
         
         # Initialise class variables determining vector size, dimensions, and beta generator type
         self.beta_type = beta_type
         self.n = number
         self.d = dimensions
+        self.freq = freq
         
         # Initialise empty beta array and array of linespace to be operated on
         self.beta_df = pd.DataFrame([], index = [l for l in range(self.n)], columns = [m for m in range(self.d)])
@@ -30,6 +31,8 @@ class beta_generator:
             return self.sin_correlated()
         elif self.beta_type == 'linear':
             return self.linear()
+        elif self.beta_type == 'high_freq':
+            return self.high_freq()
     
     
     def sin_range(self):
@@ -69,8 +72,18 @@ class beta_generator:
             self.beta_df[j] = 2*line
         
         return self.beta_df
+
+    def high_freq(self):
+        
+        n, d, line, freq = self.n, self.d, self.line, self.freq
+        
+        # Loop through dimensions and generate the same beta vector for each
+        for j in range(d):
             
-            
+            # Generate standard sin periodic function for each beta
+            self.beta_df[j] = np.sin((freq * 2 * np.pi * line) / n)
+        
+        return self.beta_df
     
 
 

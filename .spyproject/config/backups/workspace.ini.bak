@@ -6,5 +6,5 @@ save_non_project_files = False
 
 [main]
 version = 0.2.0
-recent_files = ['README.md', 'brownian_motion.py', 'beta_functions.py', 'models.py', 'test_centre.py', 'rolling_functions.py']
+recent_files = ['brownian_motion.py', 'rolling_functions.py', 'beta_functions.py', 'models.py', 'test_centre.py', 'plotting_functions.py', 'README.md']
 

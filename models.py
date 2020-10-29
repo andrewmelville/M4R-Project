@@ -39,7 +39,7 @@ class model_generator():
         # Generate beta variables
         gen = beta_generator(number = num_obs, dimensions = num_covariates, beta_type = beta_type)
         self.params = gen()
-        
+
         # Genearte covariates through brownian motion generator function and taking difference to get
         # returns data (which is approx normally distributed)
         self.covariates = walk_generator(n = num_obs, d = num_covariates).diff(periods=1).fillna(method='backfill')
