@@ -36,7 +36,8 @@ def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, l
             y_est =  float(est_coefficients.loc[i+lookback]) * x_est
     
             fig, ax = plt.subplots(figsize=(10,10))
-            ax.scatter(covariates[i:i+20], output[i:i+lookback])
+            ax.scatter(covariates[i:i+lookback-1], output[i:i+lookback-1])
+            # ax.scatter(covariates.loc[i+lookback], output.loc[i+lookback], 'r')
             ax.plot(x_true, y_true, 'r', label = 'True')
             ax.plot(x_est, y_est, 'g', label = 'Estimated')
             
