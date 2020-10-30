@@ -65,4 +65,4 @@ from rolling_functions import Rolling_LR
 
 reg = Rolling_LR()
 
-reg.fit(model, covs, 825)
+reg.fit(model, covs, 1000)
