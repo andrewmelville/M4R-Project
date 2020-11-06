@@ -34,7 +34,7 @@ class Rolling_LR():
         
      
         
-    def fit(self, outcome, predictors, lookback, intercept = False):
+    def fit(self, outcome, predictors, lookback, intercept = False, true_betas = []):
         
         ## Regress outcome series on predictors on a rolling window that is 'lookback' long.
         ## Intercept is not fitted by default.
@@ -44,6 +44,7 @@ class Rolling_LR():
         self.outcome = outcome
         self.predictors = predictors
         self.lookback = lookback
+        self.true_betas = true_betas
         
          # Initialise empty array for beta coefficients
         self.beta_df = pd.DataFrame([[np.nan]*predictors.shape[1]]*predictors.shape[0], 
@@ -62,7 +63,7 @@ class Rolling_LR():
         self.pred_ts = pd.DataFrame([[np.nan]*1]*predictors.shape[0], 
                                     index = predictors.index, 
                                     columns = ['Prediction'])
-        
+
         # Merge outcome and predictor series into a single dataframe
         full_df = predictors.join(outcome, on = outcome.index)
         
@@ -113,7 +114,7 @@ class Rolling_LR():
         ## Return prediction time series
         
         if self.fitted == True:
-            return pred_ts
+            return self.pred_ts
         else:
             print('No regression fitted')
     
@@ -133,6 +134,7 @@ class Rolling_LR():
             plt.show()
         else:
             print('Please fit a regression first!')
+          
             
     def R_plot(self):
         
@@ -147,6 +149,31 @@ class Rolling_LR():
             plt.xlabel('Year')
             plt.ylabel('Coefficient of Determination')
             plt.title('Plot of R^2 Over Time in Rolling Linear Regression')
+            plt.legend(loc=3)
+            plt.show()
+        
+        else:
+            print('Please fit a regression first!')
+        
+        
+    def MSE_plot (self):
+    
+        ## Plot series of cofficient of determination of the fitted model
+        if self.fitted == True:
+
+            # Plot coefficient of determination time series
+            plt.figure(figsize=(20,10))
+            
+            # MSE Plot            
+            plt.plot(self.mse_df[self.lookback:], lw=1, label = 'MSE')
+            # Bias^2 PLot
+            plt.plot(self.output-self.pred_ts)
+            # Var PLot
+            
+            
+            plt.xlabel('Index')
+            plt.ylabel('Mean Squared Error')
+            plt.title('Plot of MSE Over Time in Rolling Linear Regression')
             plt.legend(loc=3)
             plt.show()
         

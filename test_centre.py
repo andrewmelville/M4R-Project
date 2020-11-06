@@ -56,7 +56,7 @@ rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'True_Est_Betas')
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'high_freq')
+model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_range')
 betas = high_freq_model.params
 covs = high_freq_model.covariates
 
@@ -65,4 +65,8 @@ from rolling_functions import Rolling_LR
 
 reg = Rolling_LR()
 
-reg.fit(model, covs, 1000)
+reg.fit(model, covs, 600)
+#%%
+from mean_reversion import TradingStrat
+mean_rev = TradingStrat()
+test = mean_rev.MeanReversion(model, covs, chunk_size = 20, lookback = 500)

@@ -6,7 +6,7 @@ from plotting_functions import series_plot
 
 #%% Brownian Motion Generator
 
-# This function generates a d-dimensional random walk, returned as a pandas dataframe"
+# This function generates a d-dimensional random walk, returned as a pandas dataframe
 
 # 15/10/20 Andrew Melville
 
