@@ -5,7 +5,7 @@ import numpy as np
 
 
 
-class TradingStrat():
+class MeanReversion():
     
     
     # This class holds different functions for trading strategies and the analysis
@@ -21,7 +21,7 @@ class TradingStrat():
         self.signals_df = []
     
     
-    def MeanReversion(self, currency_returns, commods_returns, chunk_size = 30, lookback = 10):
+    def trade(self, currency_returns, commods_returns, chunk_size = 30, lookback = 10):
         
         # Initialise class variables
         self.lookback = lookback
@@ -60,17 +60,17 @@ class TradingStrat():
         self.residuals_df = pd.DataFrame().reindex_like(commods_returns)
         
         # Loop through each commodity
-        for i, commod in enumerate(commods_returns):
+        for i, commod in enumerate(commods_returns.columns):
             
-           # Fit rolling regression of commodity onto currency average and take
-           # prediction series
-           roll_reg = Rolling_LR()
-           roll_reg.fit(commods_returns, currency_returns, lookback = self.lookback)
-           pred_series = roll_reg.pred_series()
-           
-           self.residuals_df[commod] = commods_returns[commod] - pred_series['Prediction']
-           
-           print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
+            # Fit rolling regression of commodity onto currency average and take
+            # prediction series
+            roll_reg = Rolling_LR()
+            roll_reg.fit(commods_returns[commod], currency_returns, lookback = self.lookback)
+            pred_series = roll_reg.pred_series()
+            
+            self.residuals_df[commod] = commods_returns[commod] - pred_series['Prediction']
+            
+            print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
         
         return self.residuals_df
     
