@@ -71,4 +71,4 @@ reg.fit(model, covs, 600)
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
 test = mean_rev.noisy_trade(model, noisy_covs, chunk_size = 20, lookback = 500)
-opt_test = mean_rev.optimum_trade(model, true_covs, chunk_size = 20, lookback = 500)
+opt_test = mean_rev.optimum_trade(model, true_covs, chunk_size = 20, lookback = 500) 
