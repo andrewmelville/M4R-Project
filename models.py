@@ -6,6 +6,7 @@
 
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 from brownian_motion import walk_generator
 from beta_functions import beta_generator
@@ -24,30 +25,37 @@ class model_generator():
 
         # Initialise variables that may be asked for as output
         self.beta_type = []
-        self.covariates = []
+        self.noisy_covariates = []
         self.params = []
         self.output = []
+        self.true_covariates = []
     
     def linear_model(self, beta_type = 'sin_range', num_obs = 1000, num_covariates = 3, noise = 1):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
-        
         ## This linear model defaults to 1000 observartions with 3 covariates,
         ## and noise variance of 1.
+    
     
         # Generate beta variables
         gen = beta_generator(number = num_obs, dimensions = num_covariates, beta_type = beta_type)
         self.params = gen()
 
-        # Genearte covariates through brownian motion generator function and taking difference to get
-        # returns data (which is approx normally distributed)
-        self.covariates = walk_generator(n = num_obs, d = num_covariates).diff(periods=1).fillna(method='backfill')
+        # Generate output model time s9eries using Brownian Motion generator func
+        # and taking difference to get returns data (which is approx normally distributed)
+        self.output = walk_generator(n = num_obs, d = 1).diff(periods=1).fillna(method='backfill')
         
-        # Create time series model using covariates and beta series
-        # y = XB + E
-        self.output = (self.covariates * self.params).values.sum(axis = 1) + np.random.normal(loc = 0, scale = noise, size = num_obs)
-        self.output = pd.DataFrame(self.output, index = [l for l in range(num_obs)], columns = ['Y'])
+        
+        # Create each covariate time series model using output and beta series
+        # commodity = currency * beta + noise
+        self.true_covariates = pd.DataFrame([]).reindex_like(self.params)
+        self.noisy_covariates = self.true_covariates.copy()
+        
+        for commod in self.params:
+
+            self.noisy_covariates[commod] = (self.output[0] * self.params[commod])
+            self.true_covariates[commod] = (self.output[0] * self.params[commod]) + np.random.normal(loc = 0, scale = noise, size = num_obs)
         
         # Confirm we just made a linear model
         self.lin_model_made = True
@@ -70,10 +78,33 @@ class model_generator():
         # realisation
         
         if self.lin_model_made == True:
-            return self.covariates
+            
+            self.covariates_dict = {'True':[],'Noise':[]}
+            self.covariates_dict['True'] = self.true_covariates
+            self.covariates_dict['Noisy'] = self.noisy_covariates
+            
+            return self.covariates_dict
         else:
             print('No linear model generated yet')
         
+    def model_plot(self):
+        
+        ## Plot time series of model and its produced covariates coefficients
+        
+        if self.lin_model_made == True:
+            # Plot beta time series
+            plt.figure(figsize=(20,10))
+            for col in self.covariates.columns:    
+                plt.plot(self.covariates[col].cumsum(), lw=1, label=col)
+           
+            plt.plot(self.output.cumsum(), 'b', lw=2, label='Currency')
+            plt.xlabel('Index')
+            plt.ylabel('Price')
+            plt.title('Currency Price Compared to Generated Commodities PRices')
+            plt.legend(loc=3)
+            plt.show()
+        else:
+            print('Please fit a regression first!')
 
 ## Notes
 

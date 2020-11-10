@@ -65,7 +65,8 @@ class Rolling_LR():
                                     columns = ['Prediction'])
 
         # Merge outcome and predictor series into a single dataframe
-        full_df = predictors.join(outcome, on = outcome.index)
+        full_df = predictors.copy()
+        full_df['Y'] = outcome
         
         # Foward fill all na entries in full_df
         full_df = full_df.fillna(method='ffill')
@@ -78,7 +79,7 @@ class Rolling_LR():
             
             # Perform linear regression
             cur_lr = LinearRegression(fit_intercept=intercept)
-            cur_lr.fit(regression_window.iloc[:,1:], regression_window.iloc[:,0])
+            cur_lr.fit(regression_window.iloc[:,:-1], regression_window.iloc[:,-1])
             
             # Save beta values for current day
             self.beta_df.iloc[t+lookback-1,:] = cur_lr.coef_
