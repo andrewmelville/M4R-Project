@@ -8,16 +8,26 @@ import matplotlib.pyplot as plt
 import imageio
 import numpy as np
 
-def series_plot(data, title, xlab = 'Index', ylab = 'Value', legend = False):
+def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', legend = False):
+    
+    ## This function defines a uniform look for the plots of the data in this project
+    
+    
+    # If linewidths of each series are not specified, assign each plot the same linewidth
+    if len(linesize) == 0:
+        linesize = [1 for i in data]
+    
+    # Create the figure
     plt.figure(figsize=(20,10))
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
-    plt.legend()
     
-    for series in data:
-        plt.plot(data[series], label = series)
+    # Plot each series onto the axes
+    for i, series in enumerate(data):
+        plt.plot(data[series], label=series, lw=linesize[i])
     
+    # If legend is asked for, print it
     if legend == True:
         plt.legend()
 
