@@ -1,0 +1,76 @@
+EXCHANGE,SYMBOL,NAME,,
+CBOE,VX,CBOE VIX Futures,,yes
+CME,TY,CBOT 10-year US Treasury Note,,yes
+CME,TU,CBOT 2-year US Treasury Note,,yes
+CME,FF,CBOT 30-day Federal Funds,,yes
+CME,US,CBOT 30-year US Treasury Bond,,yes
+CME,FV,CBOT 5-year US Treasury Note,,yes
+CME,C,CBOT Corn,,yes
+CME,DJ,CBOT Dow Jones Ind Avg (DJIA),,mini
+CME,O,CBOT Oats,,yes
+CME,RR,CBOT Rough Rice,,yes
+CME,SM,CBOT Soybean Meal,,yes
+CME,BO,CBOT Soybean Oil,,yes
+CME,S,CBOT Soybeans,,yes
+CME,W,CBOT Wheat,,yes
+CME,BP,CME British Pound GBP,,yes
+CME,DA,CME Class III Milk,,yes
+CME,YM,CME E-mini Dow Jones,,yes
+CME,EC,CME Euro FX,,yes
+CME,ED,CME Eurodollar,,yes
+CME,JY,CME Japanese Yen JPY,,yes
+CME,KW,CME Kansas City Wheat,,yes
+CME,LN,CME Lean Hogs,,yes
+CME,LC,CME Live Cattle,,yes
+CME,NQ,CME NASDAQ 100 Index Mini,,yes
+CME,NE,CME New Zealand Dollar NZD,,yes
+CME,NK,CME Nikkei 225,,yes
+CME,LB,CME Random Length Lumber,,yes
+CME,MD,CME S&P 400 Midcap Index,,yes
+CME,SP,CME S&P 500 Index,,yes
+CME,ES,CME S&P 500 Index E-Mini,,yes
+CME,SF,CME Swiss Franc CHF,,yes
+CME,HG,COMEX Copper,,yes
+CME,RS1,CME Russell 1000 Index Mini Futures,,yes
+CME,RTY,CME Russell 2000 Index Mini Futures,,yes
+EUREX,FDAX,EUREX DAX,,yes
+EUREX,FESX,EUREX EURO STOXX 50 Index,,yes
+EUREX,FBTP,EUREX EuroBTP,,Long contract
+EUREX,FGBM,EUREX EuroBobl,,yes
+EUREX,FGBL,EUREX EuroBund,,yes
+EUREX,FOAT,EUREX EuroOAT,,Long contract
+EUREX,FGBS,EUREX EuroSchatz,,yes
+ICE,B,ICE Brent Crude Oil,,yes
+ICE,MP,ICE British Pound GBP,,yes
+ICE,CC,ICE Cocoa,,yes
+ICE,KC,ICE Coffee C,,yes
+ICE,CT,ICE Cotton,,yes
+ICE,G,ICE Gasoil,,yes
+ICE,O,ICE Heating Oil,,yes
+ICE,OJ,ICE Orange Juice,,yes
+ICE,ATW,ICE Rotterdam Coal,,yes
+ICE,SB,ICE Sugar No11,,yes
+ICE,M,ICE UK Natural Gas,,yes
+ICE,DX,ICE US Dollar Index,,yes
+ICE,T,ICE WTI Crude Oil,,yes
+LIFFE,I,LIFFE EURIBOR,,yes
+LIFFE,Z,LIFFE FTSE 100 Index,,yes
+LIFFE,C,LIFFE London Cocoa,,think so
+LIFFE,R,LIFFE Long Gilt,yes,yes
+LIFFE,L,LIFFE Short Sterling,yes,yes
+MGEX,MW,MGEX Hard Red Spring Wheat,yes,yes
+MX,SXF,MX Montreal SPTSX 60 Index,no,yes
+CME,RB,NYMEX Gasoline,yes,yes
+CME,GC,NYMEX Gold,yes,yes
+CME,HO,NYMEX Heating Oil,yes,yes
+CME,NG,NYMEX Natural Gas,yes,yes
+CME,PA,NYMEX Palladium,yes,yes
+CME,PL,NYMEX Platinum,yes,yes
+CME,SI,NYMEX Silver,yes,yes
+CME,CL,NYMEX WTI Crude Oil,yes,yes
+SHFE,AL,SHFE Aluminium,yes,yes
+SHFE,CU,SHFE Copper,yes,yes
+SHFE,PB,SHFE Lead,yes,yes
+SHFE,RU,SHFE Natural Rubber,yes,yes
+SHFE,RB,SHFE Rebar,yes,yes
+SHFE,ZN,SHFE Zinc,yes,yes
