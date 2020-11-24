@@ -1,0 +1,31 @@
+EXCHANGE,SYMBOL,NAME
+CME,C,CBOT Corn
+CME,O,CBOT Oats
+CME,RR,CBOT Rough Rice
+CME,BO,CBOT Soybean Oil
+CME,S,CBOT Soybeans
+CME,W,CBOT Wheat
+CME,DA,CME Class III Milk
+CME,KW,CME Kansas City Wheat
+CME,LN,CME Lean Hogs
+CME,LC,CME Live Cattle
+CME,LB,CME Random Length Lumber
+CME,HG,COMEX Copper
+ICE,B,ICE Brent Crude Oil
+ICE,CC,ICE Cocoa
+ICE,KC,ICE Coffee C
+ICE,CT,ICE Cotton
+ICE,G,ICE Gasoil
+ICE,O,ICE Heating Oil
+ICE,OJ,ICE Orange Juice
+ICE,SB,ICE Sugar No11
+ICE,T,ICE WTI Crude Oil
+MGEX,MW,MGEX Hard Red Spring Wheat
+CME,RB,NYMEX Gasoline
+CME,GC,NYMEX Gold
+CME,HO,NYMEX Heating Oil
+CME,NG,NYMEX Natural Gas
+CME,PA,NYMEX Palladium
+CME,PL,NYMEX Platinum
+CME,SI,NYMEX Silver
+CME,CL,NYMEX WTI Crude Oil
