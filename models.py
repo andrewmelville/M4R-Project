@@ -42,7 +42,7 @@ class model_generator():
         gen = beta_generator(number = num_obs, dimensions = num_covariates, beta_type = beta_type)
         self.params = gen()
 
-        # Generate output model time s9eries using Brownian Motion generator func
+        # Generate output model time series using Brownian Motion generator function
         # and taking difference to get returns data (which is approx normally distributed)
         self.output = walk_generator(n = num_obs, d = 1).diff(periods=1).fillna(method='backfill')
         
@@ -54,8 +54,8 @@ class model_generator():
         
         for commod in self.params:
 
-            self.noisy_covariates[commod] = (self.output[0] * self.params[commod])
-            self.true_covariates[commod] = (self.output[0] * self.params[commod]) + np.random.normal(loc = 0, scale = noise, size = num_obs)
+            self.true_covariates[commod] = (self.output[0] * self.params[commod])
+            self.noisy_covariates[commod] = (self.output[0] * self.params[commod]) + np.random.normal(loc = 0, scale = noise, size = num_obs)
         
         # Confirm we just made a linear model
         self.lin_model_made = True

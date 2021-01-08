@@ -34,19 +34,25 @@ print(test.values.sum(axis = 1))
 
 #%%
 from models import model_generator
+
 test_model = model_generator()
 
 model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_correlated')
 betas = test_model.params
-covs = test_model.covariates
+covs = test_model.covariates()
 
 #%%
 
-from rolling_functions import Rolling_LR
+from rolling_functions import Rolling_LR, Rolling_LR_OneD
 
+reg_oneD = Rolling_LR_OneD()
+
+# test = reg_oneD.fit(covs['Noisy'], model, 750)
+
+#%%
 reg = Rolling_LR()
 
-reg.fit(model, covs, 20)
+reg.fit(covs['Noisy'], model, 750)
 
 #%%
 from plotting_functions import rolling_beta_plot
@@ -57,18 +63,18 @@ rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'True_Est_Betas')
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 3, beta_type = 'sin_range')
+model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 20, beta_type = 'sin_range', noise= 0.5)
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
 #%%
-from rolling_functions import Rolling_LR
+from rolling_functions import Rolling_LR_OneD
 
-reg = Rolling_LR()
+reg = Rolling_LR_OneD()
 
-reg.fit(model, covs, 600)
+
+reg.fit(noisy_covs,model, 750)
 #%%
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.noisy_trade(model, noisy_covs, chunk_size = 20, lookback = 500)
-opt_test = mean_rev.optimum_trade(model, true_covs, chunk_size = 20, lookback = 500) 
+test = mean_rev.back_test(model, noisy_covs, true_covs, chunk_size = 20, lookback = 625)
