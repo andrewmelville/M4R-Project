@@ -4,6 +4,7 @@
 # 15/10/20 Andrew Melville
 
 import pandas as pd
+from brownian_motion import walk_generator
 import numpy as np
 
 class beta_generator:
@@ -33,6 +34,8 @@ class beta_generator:
             return self.linear()
         elif self.beta_type == 'high_freq':
             return self.high_freq()
+        elif self.beta_type == 'brownian':
+            return self.brownian()
     
     
     def sin_range(self):
@@ -85,7 +88,13 @@ class beta_generator:
         
         return self.beta_df
     
-
+    def brownian(self):
+        
+        n, d = self.n, self.d
+        
+        self.beta_df = walk_generator(d = d, n = n, drift = 0, sigma = 0.01)
+    
+        return self.beta_df
 
 
 ## Notes

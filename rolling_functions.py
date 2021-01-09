@@ -268,14 +268,18 @@ class Rolling_LR_OneD():
         # Compute beta hat estimate
         cov_mats = full_df.rolling(window = lookback).cov()
         cov_mats.reset_index(inplace=True)
-        cov_mats = cov_mats[[1,'Y']]
+        cov_mats = cov_mats[cov_mats.columns[-2:]]
         cov_mats = cov_mats[cov_mats.index % 2 == 0]
         cov_mats.reset_index(inplace=True)
-        self.beta_df['Beta'] = cov_mats['Y'] / cov_mats[1]
+        
+        beta_series = cov_mats['Y'] / cov_mats[predictor.columns[0]]
+        
+        self.beta_df['Beta'] = np.array(beta_series)
 
         # Fill in prediction series
-        self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor[1]
-        # print(self.predictor)
+        self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor[self.predictor.columns[0]]
+
+
         self.fitted = True
         
         
@@ -351,6 +355,7 @@ class Rolling_LR_OneD():
             
         else:
             print('Please fit a regression first!')
+
 
 
 #%%

@@ -4,10 +4,7 @@
 from brownian_motion import walk_generator
 from plotting_functions import series_plot
 from beta_functions import beta_generator
-from models import model_generator
 from plotting_functions import series_plot
-from rolling_functions import Rolling_LR
-from trading_strats import MeanReversion
 
 import numpy as np
 import pandas as pd
@@ -30,27 +27,31 @@ from models import model_generator
 
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_correlated')
+model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_range')
 betas = test_model.params
 covs = test_model.covariates()
-
+series_plot(test_model.params,'')
 #%%
 
-from rolling_functions import Rolling_LR, Rolling_LR_OneD
+from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
 
-test = reg_oneD.fit(covs['Noisy'], model, 750)
+test = reg_oneD.fit(covs['Noisy'], model, 625)
+reg_oneD.beta_plot()
 #%%
-from plotting_functions import rolling_beta_plot
 
-rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'True_Est_Betas')
+from rolling_functions import Rolling_LR
 
+reg = Rolling_LR()
+
+reg.fit(covs['Noisy'], model, 625)
+reg.beta_plot()
 #%%
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='sin_range', noise=1)
+model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=1)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
@@ -60,5 +61,3 @@ noise = high_freq_model.noise
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
 test = mean_rev.back_test(model, noisy_covs, noise, chunk_size = 20, lookback = 625)
-
-high_freq_model.model_plot()

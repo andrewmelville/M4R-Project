@@ -6,5 +6,5 @@ save_non_project_files = False
 
 [main]
 version = 0.2.0
-recent_files = ['trading_strats.py', 'models.py', 'rolling_functions.py', 'test_centre.py']
+recent_files = ['brownian_motion.py', 'models.py', 'rolling_functions.py', 'trading_strats.py', 'test_centre.py']
 

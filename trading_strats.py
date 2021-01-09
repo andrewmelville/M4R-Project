@@ -115,7 +115,7 @@ class MeanReversion():
             
             self.residuals_df[commod] = commods_returns[commod] - pred_series['Prediction']
             
-            print('{} residuals completed {}/{}'.format(commod+1, i+1, commods_returns.shape[1]))
+            print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
         
         return self.residuals_df
     
@@ -145,11 +145,11 @@ class MeanReversion():
             sell_list = current_chunk_list[pos_mask]
             
             # Mask to select month ahead
-            signal_mask = chunk_list[i+1].index
+            signal_mask = chunk_list[i+1].index[0]
 
             # Assign positive (sell) value to contracts for month ahead
             self.signal_df.loc[signal_mask, sell_list.index[:1]] = 1
-            
+
             
             # Get bottom three negative residual contracts
             neg_mask = current_chunk_list < 0
