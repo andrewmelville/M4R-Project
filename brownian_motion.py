@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import random
 from plotting_functions import series_plot
 
 #%% Brownian Motion Generator
@@ -10,7 +10,8 @@ from plotting_functions import series_plot
 
 # 15/10/20 Andrew Melville
 
-def walk_generator(x0 = 0, d = 3, n = 100, drift = 0, sigma = 1):
+#%%
+def walk_generator(d = 3, n = 100, drift = 0, sigma = 1):
    
     # x0 -- Initial starting point for walk (default = 100)
     # d -- number of dimensions of walk (default = 1)
@@ -18,18 +19,29 @@ def walk_generator(x0 = 0, d = 3, n = 100, drift = 0, sigma = 1):
     # drift -- mean of indpendent increments (default = 0)
     # sigma -- variance (volatility) of independent increments 
     
+    # Define intial conditions for walk
+    S0 = [1 * random.random() for dim in range(d)]
     
-    # Create empty dataframe for assignment
-    increments_df = pd.DataFrame([], index = [l for l in range(n)], columns = [m for m in range(d)])
+    # Create empty dataframes for assignment
+    increments_df = pd.DataFrame([], index = [l for l in range(n)], columns = [dim+1 for dim in range(d)])
+    z_df = pd.DataFrame([], index = [l for l in range(n)], columns = [dim+1 for dim in range(d)])
+    brownian_df = pd.DataFrame([], index = [l for l in range(n)], columns = [dim+1 for dim in range(d)])
     
     # Loop through each dimension and generate n independent increments
-    for j in range(d):
-        increments_df[j] = np.random.normal(loc = drift, scale = sigma, size = n)
-
-    # Define the random walk as the cumulative sum of the increments
-    # Note, may need to rescale thisw appropriately for CLT purposes
-    brownian_df = increments_df.cumsum(axis = 0)
-    
+    for dim in range(d):
+        
+        # Set initial condition
+        increments_df[dim+1].iloc[0] = 0
+        
+        # Generate iid normal increments
+        increments_df[dim+1].iloc[1:] = np.random.normal(loc = 0, scale = 1, size = n-1)
+         
+        # Define Zk dataframe of brownian motion
+        z_df[dim+1] = increments_df[dim+1].cumsum(axis = 0)
+        
+        # Generate final model
+        brownian_df[dim+1] = S0[dim] * np.exp(sigma * np.array(z_df[dim+1], dtype=float) + drift * np.array(range(n)), dtype=float)
+        # brownian_df[dim+1] = sigma * np.array(z_df[dim+1], dtype=float)
     return brownian_df
 
 ## Notes

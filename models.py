@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+from plotting_functions import series_plot
 from brownian_motion import walk_generator
 from beta_functions import beta_generator
 
@@ -29,6 +30,7 @@ class model_generator():
         self.params = []
         self.output = []
         self.true_covariates = []
+        self.noise = []
     
     def linear_model(self, beta_type = 'sin_range', num_obs = 1000, num_covariates = 3, noise = 1):
         
@@ -44,18 +46,27 @@ class model_generator():
 
         # Generate output model time series using Brownian Motion generator function
         # and taking difference to get returns data (which is approx normally distributed)
-        self.output = walk_generator(n = num_obs, d = 1).diff(periods=1).fillna(method='backfill')
+        hold = walk_generator(n = num_obs, d = 1, drift=-0.000002, sigma=0.002)
+        self.output = hold.copy()
+        self.output = self.output.diff(periods=1).fillna(method='backfill')
+        self.output.iloc[0] = hold.iloc[0]
         
+        self.noise = pd.DataFrame([]).reindex_like(self.params)
         
         # Create each covariate time series model using output and beta series
         # commodity = currency * beta + noise
         self.true_covariates = pd.DataFrame([]).reindex_like(self.params)
         self.noisy_covariates = self.true_covariates.copy()
         
+        # Loop through each commodity
         for commod in self.params:
-
-            self.true_covariates[commod] = (self.output[0] * self.params[commod])
-            self.noisy_covariates[commod] = (self.output[0] * self.params[commod]) + np.random.normal(loc = 0, scale = noise, size = num_obs)
+            
+            # Generate and save vector of noise 
+            self.noise[commod] = np.random.normal(loc = 0, scale = noise, size = num_obs)
+            
+            # Generate and save true covariates and noisy covariates
+            self.true_covariates[commod] = (self.output[1] * self.params[commod])
+            self.noisy_covariates[commod] = (self.output[1] * self.params[commod]) + self.noise[commod]
         
         # Confirm we just made a linear model
         self.lin_model_made = True
@@ -94,15 +105,15 @@ class model_generator():
         if self.lin_model_made == True:
             # Plot beta time series
             plt.figure(figsize=(20,10))
-            for col in self.covariates.columns:    
-                plt.plot(self.covariates[col].cumsum(), lw=1, label=col)
-           
-            plt.plot(self.output.cumsum(), 'b', lw=2, label='Currency')
-            plt.xlabel('Index')
-            plt.ylabel('Price')
-            plt.title('Currency Price Compared to Generated Commodities PRices')
-            plt.legend(loc=3)
-            plt.show()
+              
+            # plt.plot(selfoutput.cumsum(), lw=1, label=col)
+            series_plot(self.output.cumsum(),'Currency Model')
+            # plt.plot(self.output.cumsum(), 'b', lw=1, label='Currency')
+            # plt.xlabel('Index')
+            # plt.ylabel('Price')
+            # plt.title('Currency Price Compared to Generated Commodities PRices')
+            # plt.legend(loc=3)
+            # plt.show()
         else:
             print('Please fit a regression first!')
             
