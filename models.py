@@ -105,6 +105,26 @@ class model_generator():
             plt.show()
         else:
             print('Please fit a regression first!')
+            
+    def beta_plot(self):
+        
+        ## Plot time series of beta coefficients
+        
+        if self.lin_model_made == True:
+            
+            # Plot beta time series
+            plt.figure(figsize=(20,10))
+            for col in self.params.columns:    
+                plt.plot(self.params[col], lw=1, label=col)
+           
+            # plt.plot(self.output.cumsum(), 'b', lw=2, label='')
+            plt.xlabel('Index')
+            plt.ylabel('Value')
+            plt.title('Beta Coefficients that generated the model')
+            plt.legend(loc=3)
+            plt.show()
+        else:
+            print('Please fit a regression first!')
 
 ## Notes
 

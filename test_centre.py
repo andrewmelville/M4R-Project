@@ -63,7 +63,7 @@ rolling_beta_plot(covs, betas, reg.coefficients(), model, 20, 'True_Est_Betas')
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 20, beta_type = 'sin_range', noise= 0.5)
+model = high_freq_model.linear_model(num_obs = 10000, num_covariates = 30, beta_type = 'sin_range', noise= 0.5)
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
