@@ -2,7 +2,7 @@ from rolling_functions import Rolling_LR, Rolling_LR_OneD
 from plotting_functions import series_plot
 import pandas as pd
 import numpy as np
-
+import matplotlib.pyplot as plt
 
 
 class MeanReversion():
@@ -103,7 +103,7 @@ class MeanReversion():
         
         # Create empty residual dataframe
         self.residuals_df = pd.DataFrame().reindex_like(commods_returns)
-        
+        self.beta_df = pd.DataFrame([]).reindex_like(commods_returns)
         # Loop through each commodity
         for i, commod in enumerate(commods_returns.columns):
             
@@ -112,6 +112,8 @@ class MeanReversion():
             roll_reg = Rolling_LR_OneD()
             roll_reg.fit(commods_returns[commod], currency_returns, lookback = self.lookback)
             pred_series = roll_reg.pred_ts
+            
+            self.beta_df[commod] = roll_reg.beta_df
             
             self.residuals_df[commod] = commods_returns[commod] - pred_series['Prediction']
             
@@ -159,6 +161,22 @@ class MeanReversion():
             self.signal_df.loc[signal_mask, buy_list.index[-1:]] = -1
         
         return self.signal_df
+    
+    
+    def beta_plot(self):
+     
+        ## Plot time series of estimated beta coefficients
+        
+        # Plot beta time series
+        plt.figure(figsize=(20,10))
+        for col in self.beta_df.columns:    
+           plt.plot(self.beta_df[col], lw=1, label=col)
+       
+        plt.xlabel('Index')
+        plt.ylabel('Value')
+        plt.title('Estimated Beta Coefficients that generated residual signals')
+        plt.legend(loc=3)
+        plt.show()
 
 #%%         Trading strategy: 
 # # Long bottom three negative residuals, Short top three postive residuals.

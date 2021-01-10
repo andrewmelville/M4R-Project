@@ -11,42 +11,30 @@ import pandas as pd
 import matplotlib.pyplot as plt
 #%%
 from brownian_motion import walk_generator
-brown = walk_generator(n=10000, d=100)
+brown = walk_generator(n=10000, d=100, drift = 0.000001, sigma=0.005)
 
 
-series_plot(brown, 'Random Walk Plot', xlab = 'Value', ylab= 'T')
-
-#%%
-from beta_functions import beta_generator
-test =  beta_generator()
-#%%
-from models import linear_model_generator
-test = linear_model_generator()
+series_plot(brown, 'Random Walk Plot')
 #%%
 from models import model_generator
 
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'sin_range')
+model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'brownian')
 betas = test_model.params
 covs = test_model.covariates()
-series_plot(test_model.params,'')
+test_model.beta_plot()
+# test_model.model_plot()
+# test_model.noisy_covariates_plot()
+# test_model.true_covariates_plot()
 #%%
 
 from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
 
-test = reg_oneD.fit(covs['Noisy'], model, 625)
+test = reg_oneD.fit(covs['Noisy'], model, 1000)
 reg_oneD.beta_plot()
-#%%
-
-from rolling_functions import Rolling_LR
-
-reg = Rolling_LR()
-
-reg.fit(covs['Noisy'], model, 625)
-reg.beta_plot()
 #%%
 from models import model_generator
 high_freq_model = model_generator()
@@ -60,4 +48,4 @@ noise = high_freq_model.noise
 
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.back_test(model, noisy_covs, noise, chunk_size = 20, lookback = 625)
+test = mean_rev.back_test(model, noisy_covs, noise, chunk_size = 20, lookback = 300)

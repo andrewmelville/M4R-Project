@@ -11,7 +11,7 @@ from plotting_functions import series_plot
 # 15/10/20 Andrew Melville
 
 #%%
-def walk_generator(d = 3, n = 100, drift = 0, sigma = 1):
+def walk_generator(d = 3, n = 100, drift = 0, sigma = 1, initial_range = [0,1]):
    
     # x0 -- Initial starting point for walk (default = 100)
     # d -- number of dimensions of walk (default = 1)
@@ -20,7 +20,7 @@ def walk_generator(d = 3, n = 100, drift = 0, sigma = 1):
     # sigma -- variance (volatility) of independent increments 
     
     # Define intial conditions for walk
-    S0 = [1 * random.random() for dim in range(d)]
+    S0 = [(initial_range[1]-initial_range[0]) * random.random() + initial_range[0] for dim in range(d)]
     
     # Create empty dataframes for assignment
     increments_df = pd.DataFrame([], index = [l for l in range(n)], columns = [dim+1 for dim in range(d)])

@@ -92,7 +92,7 @@ class beta_generator:
         
         n, d = self.n, self.d
         
-        self.beta_df = walk_generator(d = d, n = n, drift = 0, sigma = 0.01)
+        self.beta_df = walk_generator(d = d, n = n, drift = 0, sigma = 0.01, initial_range=[10,100])
     
         return self.beta_df
 

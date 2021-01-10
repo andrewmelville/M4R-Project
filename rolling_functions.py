@@ -273,7 +273,7 @@ class Rolling_LR_OneD():
         cov_mats.reset_index(inplace=True)
         
         beta_series = cov_mats['Y'] / cov_mats[predictor.columns[0]]
-        
+
         self.beta_df['Beta'] = np.array(beta_series)
 
         # Fill in prediction series
