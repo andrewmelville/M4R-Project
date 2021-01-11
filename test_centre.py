@@ -20,7 +20,7 @@ from models import model_generator
 
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'brownian')
+model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'brownian',noise=0.001)
 betas = test_model.params
 covs = test_model.covariates()
 test_model.beta_plot()
@@ -33,13 +33,13 @@ from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
 
-test = reg_oneD.fit(covs['Noisy'], model, 1000)
+test = reg_oneD.fit(covs['Noisy'], model, 600)
 reg_oneD.beta_plot()
 #%%
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=1)
+model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=10)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
