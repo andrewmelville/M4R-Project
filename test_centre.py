@@ -20,7 +20,7 @@ from models import model_generator
 
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'brownian',noise=0.001)
+model = test_model.linear_model(num_obs = 10000, num_covariates = 1, beta_type = 'brownian',noise=0.0001)
 betas = test_model.params
 covs = test_model.covariates()
 test_model.beta_plot()
@@ -33,13 +33,13 @@ from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
 
-test = reg_oneD.fit(covs['Noisy'], model, 600)
+test = reg_oneD.fit(covs['Noisy'], model, 120)
 reg_oneD.beta_plot()
 #%%
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=10)
+model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=0.0001)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
@@ -49,3 +49,6 @@ noise = high_freq_model.noise
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
 test = mean_rev.back_test(model, noisy_covs, noise, chunk_size = 20, lookback = 300)
+
+high_freq_model.beta_plot()
+mean_rev.Residuals()
