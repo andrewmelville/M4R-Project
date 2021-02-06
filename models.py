@@ -46,7 +46,7 @@ class model_generator():
 
         # Generate output model time series using Brownian Motion generator function
         # and taking difference to get returns data (which is approx normally distributed)
-        hold = walk_generator(n = num_obs, d = 1, drift=-0.000002, sigma=0.002, initial_range=[0,1])
+        hold = walk_generator(n = num_obs, d = 1, drift=-0.000002, sigma=0.0002, initial_range=[0,1])
 
         self.output = hold.copy()
         self.output = self.output.diff(periods=1).fillna(method='backfill')
