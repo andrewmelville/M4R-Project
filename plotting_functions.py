@@ -74,6 +74,8 @@ def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, l
 
 def signal_plot(returns, signals):
     
+    signals = np.array(signals)
+    
     plt.figure(figsize=(20,10))
     plt.title('True Buy and Sell Signals for Next Day Returns')
     plt.xlabel('Index')
@@ -87,7 +89,7 @@ def signal_plot(returns, signals):
     sell_mask = signals <= 0
     
     # Plot buy/sell signals atop price series
-    plt.plot(returns.cumsum()[buy_mask[0]], 'g^')
-    plt.plot(returns.cumsum()[sell_mask[0]], 'rv')
+    plt.plot(returns.cumsum()[buy_mask], 'g^')
+    plt.plot(returns.cumsum()[sell_mask], 'rv')
     
     plt.show()
