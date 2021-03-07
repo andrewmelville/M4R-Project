@@ -97,7 +97,7 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     test_X = np.array(test_X)
 
     # prepare data
-    train_X = tf.RaggedTensor.constant(train_X)
+    train_X = tf.(train_X)() 
     # train_y =  tf.convert_to_tensor(train_y)
     # val_X =  tf.convert_to_tensor(val_X)
     # val_y =  tf.convert_to_tensor(val_y)
