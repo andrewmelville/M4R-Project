@@ -32,12 +32,12 @@ tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
 #%% Simulating Data
 
 
-# # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
-# model = model_generator()
-# sim_currency = model.linear_model(num_obs=10000, num_covariates=30, beta_type='brownian', noise=0.001)
-# sim_betas = model.params
-# sim_commods = model.covariates()['Noisy']
-# model.model_plot()
+# Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
+model = model_generator()
+sim_currency = model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=0.001)
+sim_betas = model.params
+sim_commods = model.covariates()['Noisy']
+model.model_plot()
 
 next_day_returns = pd.DataFrame(sim_commods[1].iloc[1:])
 # CBOT_OATS_df = pd.read_csv('Data/Continuous Futures Series/CBOT Rough Rice.csv',
@@ -75,9 +75,9 @@ def makeXy(series_df, nb_timesteps):
     test_scaled = pd.DataFrame(scaler.transform(test_unscaled[col_name].values.reshape(-1,1)))
     
     # Reshape data to be vectors of length nb_timesteps and labels
-    train_X, train_y = [], np.array([returns for returns in train_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
-    val_X, val_y = [], np.array([returns for returns in val_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
-    test_X, test_y = [], np.array([returns for returns in test_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
+    train_X, train_y = [], np.array([1 if returns > 0 else 0 for returns in train_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
+    val_X, val_y = [], np.array([1 if returns > 0 else 0 for returns in val_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
+    test_X, test_y = [], np.array([1 if returns > 0 else 0 for returns in test_unscaled[col_name].shift(-1)])[nb_timesteps:-1]
     
     # Train
     for i in range(nb_timesteps, train_scaled[0].shape[0]-1):
@@ -107,7 +107,7 @@ def makeXy(series_df, nb_timesteps):
 
         
 
-X_train, y_train, X_val, y_val, X_test, y_test, scaler = makeXy(next_day_returns.dropna(), 600)
+X_train, y_train, X_val, y_val, X_test, y_test, scaler = makeXy(next_day_returns.dropna(), 500)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
 
@@ -122,18 +122,19 @@ from keras.callbacks import ModelCheckpoint
 # from keras.layers import Bidirectional, RNN, LSTMCell
 
 # Define input layer which has shape (None, 7) and of type float32. None indicates the number of instances in the mini-batch used for training.
-input_layer = Input(shape=(600,1), dtype='float32')
+input_layer = Input(shape=(500,1), dtype='float32')
 
 # The LSTM layer is defined for seven timesteps
-lstm_layer = LSTM(10, input_shape=(600,1), return_sequences=False)(input_layer)
+lstm_layer = LSTM(10, input_shape=(500,1), return_sequences=False)(input_layer)
+
+dense_layer = Dense(128, activation='relu')(lstm_layer)
 
 # Use Dropout regularization - the parameter chosen here can in principle be optimized.
-dropout_layer = Dropout(0.2)(lstm_layer)
+dropout_layer = Dropout(0.2)(dense_layer)
 
 # Finally, the output layer gives prediction for the next day's air pressure. This should be a real number value, and so no activation function is used (i.e. linear activation).
 # dense_layer = Dense(5, activation='tanh')(dropout_layer)
-output_layer = Dense(2, activation='tanh')(dropout_layer)
-
+output_layer = Dense(2, activation='sigmoid')(dropout_layer)
 #%% Defining custom loss function to be used in model training
 
 def profit_loss(y_true, y_pred):
@@ -146,8 +147,13 @@ keras.losses.profit_loss = profit_loss
 loss_profit = profit_loss
 opt = tf.keras.optimizers.Adam()
 
-ts_model = Model(inputs=input_layer, outputs=output_layer)
-ts_model.compile(loss=loss_profit, optimizer=opt)
+ts_model = Model(inputs=input_layer,
+                 outputs=output_layer)
+# ts_model.compile(loss=loss_profit, optimizer=opt)
+ts_model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                 optimizer=opt,
+                 metrics=['accuracy'])
+
 ts_model.summary()
 
 save_weights_at = os.path.join('keras_models', 'Sim_Data_LSTM_weights')
@@ -157,9 +163,10 @@ save_weights_at = os.path.join('keras_models', 'Sim_Data_LSTM_weights')
 save_best = ModelCheckpoint(save_weights_at, monitor='val_loss', verbose=0,
                             save_best_only=True, save_weights_only=False, mode='min',
                             period=1)
-ts_model.fit(x=X_train, y=y_train, batch_size=32, epochs=1,
-             verbose=1, callbacks=[save_best], validation_data=(X_val, y_val),
-             shuffle=True)
+ts_model.fit(x=X_train, y=y_train, 
+             batch_size=32, epochs=4,
+             verbose=True, callbacks=[save_best], validation_data=(X_val, y_val),
+             shuffle=False)
 
 
 # Prediction are made for the air pressure from the best saved model. The model's predictions, which are on the scaled  air-pressure, are inverse transformed to get predictions on original air pressure. The goodness-of-fit, R-squared is also calculated for the predictions on the original variable.
@@ -168,7 +175,7 @@ ts_model.fit(x=X_train, y=y_train, batch_size=32, epochs=1,
 best_model = load_model(os.path.join('keras_models', 'Sim_Data_LSTM_weights'), custom_objects={'profit_loss':profit_loss})
 # best_model = load_model(os.path.join('keras_models', 'Sim_Data_LSTM_weights.01-0.9380.hdf5'), custom_objects={'profit_loss':profit_loss})
 # best_model = load_model(os.path.join('keras_models', 'PRSA_data_Air_Pressure_LSTM_weights.02-0.0128.hdf5'))
-preds = best_model.predict(X_val)
+preds = best_model.predict(X_train)
 pred_PRES = scaler.inverse_transform(preds)
 pred_PRES = np.squeeze(pred_PRES)
 # In[ ]:
@@ -184,8 +191,10 @@ print('R-squared on validation set of the returns:', r2)
 # In[ ]:
 import matplotlib.pyplot as plt    
 
-signal_plot(np.array(y_val), pred_PRES)
-plt.hist(pred_PRES, bins=100)
+n = next_day_returns.shape[0]
+
+signal_plot(next_day_returns[501:int(n*0.7)], [-1 if np.argmax(prediction) == 0 else 1 for prediction in pred_PRES])
+# plt.hist(pred_PRES, bins=100)
 # def pred_plot(actual_y, pred_y):
 
 #     plt.figure(figsize=(10, 10))

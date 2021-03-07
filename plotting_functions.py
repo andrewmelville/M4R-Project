@@ -7,6 +7,7 @@
 import matplotlib.pyplot as plt
 import imageio
 import numpy as np
+import pandas as pd
 
 def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', legend = False):
     
@@ -23,9 +24,15 @@ def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', lege
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     
+    # Turn data inputs into single pandas dataframe
+    if type(data) == list:
+        data_concat = pd.concat(data, axis=1)
+    else:
+        data_concat = data.copy()
+    
     # Plot each series onto the axes
-    for i, series in enumerate(data):
-        plt.plot(data[series], label=series, lw=linesize[i])
+    for i, series in enumerate(data_concat):
+        plt.plot(data_concat[series], label=series, lw=linesize[i])
     
     # If legend is asked for, print it
     if legend == True:
@@ -77,7 +84,7 @@ def signal_plot(returns, signals):
     signals = np.array(signals)
     
     plt.figure(figsize=(20,10))
-    plt.title('True Buy and Sell Signals for Next Day Returns')
+    plt.title('Predicted Buy and Sell Signals for Next Day Returns')
     plt.xlabel('Index')
     plt.ylabel('Commodity Value')
     
@@ -89,7 +96,7 @@ def signal_plot(returns, signals):
     sell_mask = signals <= 0
     
     # Plot buy/sell signals atop price series
-    plt.plot(returns.cumsum()[buy_mask], 'g^')
-    plt.plot(returns.cumsum()[sell_mask], 'rv')
+    plt.plot(returns.cumsum()[buy_mask], 'g^', lw=0.01)
+    plt.plot(returns.cumsum()[sell_mask], 'rv', lw=0.01)
     
     plt.show()

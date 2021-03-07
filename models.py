@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from plotting_functions import series_plot
-from brownian_motion import walk_generator
+from brownian_motion import geo_bm
 from beta_functions import beta_generator
 
 class model_generator():
@@ -32,7 +32,7 @@ class model_generator():
         self.true_covariates = []
         self.noise = []
     
-    def linear_model(self, beta_type = 'sin_range', num_obs = 1000, num_covariates = 3, noise = 1):
+    def linear_model(self, beta_type = 'bm_std', num_obs = 1000, num_covariates = 3, noise = 1):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
@@ -41,12 +41,19 @@ class model_generator():
     
     
         # Generate beta variables
-        gen = beta_generator(number = num_obs, dimensions = num_covariates, beta_type = beta_type)
+        gen = beta_generator(number=num_obs,
+                             dimensions=num_covariates,
+                             beta_type=beta_type,
+                             noise=0.0035)
         self.params = gen()
 
         # Generate output model time series using Brownian Motion generator function
         # and taking difference to get returns data (which is approx normally distributed)
-        hold = walk_generator(n = num_obs, d = 1, drift=-0.000002, sigma=0.0002, initial_range=[0,1])
+        hold = geo_bm(n = num_obs,
+                      d = 1,
+                      drift=-0.000002,
+                      sigma=0.0008,
+                      initial_range=[0,1])
 
         self.output = hold.copy()
         self.output = self.output.diff(periods=1).fillna(method='backfill')
@@ -69,7 +76,13 @@ class model_generator():
             # Generate and save true covariates and noisy covariates
             self.true_covariates[commod] = (self.output[1].iloc[1:] * self.params[commod])
             self.noisy_covariates[commod] = (self.output[1].iloc[1:] * self.params[commod]) + self.noise[commod]
-        
+            
+            # Set initial conditions for value of commodities
+            initial_cond = hold.iloc[0] * self.params[commod].iloc[0]            
+
+            self.true_covariates[commod].iloc[0] = float(initial_cond)
+            self.noisy_covariates[commod].iloc[0] = float(initial_cond)
+            
         # Confirm we just made a linear model
         self.lin_model_made = True
         

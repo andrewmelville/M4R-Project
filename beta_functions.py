@@ -4,19 +4,20 @@
 # 15/10/20 Andrew Melville
 
 import pandas as pd
-from brownian_motion import walk_generator
+from brownian_motion import geo_bm, bm_std
 import numpy as np
 
 class beta_generator:
     
     
-    def __init__(self, beta_type, number, dimensions, freq = 10):
+    def __init__(self, beta_type, number, dimensions, freq = 10, noise = 0.0035):
         
         # Initialise class variables determining vector size, dimensions, and beta generator type
         self.beta_type = beta_type
         self.n = number
         self.d = dimensions
         self.freq = freq
+        self.noise = noise
         
         # Initialise empty beta array and array of linespace to be operated on
         self.beta_df = pd.DataFrame([], index = [l for l in range(self.n)], columns = [m for m in range(self.d)])
@@ -34,7 +35,9 @@ class beta_generator:
             return self.linear()
         elif self.beta_type == 'high_freq':
             return self.high_freq()
-        elif self.beta_type == 'brownian':
+        elif self.beta_type == 'geo_bm':
+            return self.brownian()
+        elif self.beta_type == 'bm_std':
             return self.brownian()
     
     
@@ -92,7 +95,7 @@ class beta_generator:
         
         n, d = self.n, self.d
         
-        self.beta_df = walk_generator(d = d, n = n, drift = 0, sigma = 0.01, initial_range=[-0.5,0.5])
+        self.beta_df = bm_std(d=d, n=n, sigma=self.noise, initial_range=[-0.1,0.6])
     
         return self.beta_df
 
