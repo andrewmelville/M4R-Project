@@ -74,11 +74,12 @@ class model_generator():
             self.noise[commod] = np.random.normal(loc = 0, scale = noise, size = num_obs)
             
             # Generate and save true covariates and noisy covariates
-            self.true_covariates[commod] = (self.output[1].iloc[1:] * self.params[commod])
-            self.noisy_covariates[commod] = (self.output[1].iloc[1:] * self.params[commod]) + self.noise[commod]
+            self.true_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod])
+            self.noisy_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod]) + self.noise[commod]
             
             # Set initial conditions for value of commodities
-            initial_cond = hold.iloc[0] * self.params[commod].iloc[0]            
+            initial_cond = np.random.gamma(1,0.2)
+            # hold.iloc[0] * self.params[commod].iloc[0]            
 
             self.true_covariates[commod].iloc[0] = float(initial_cond)
             self.noisy_covariates[commod].iloc[0] = float(initial_cond)

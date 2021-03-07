@@ -39,7 +39,7 @@ reg_oneD.beta_plot()
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=1)
+model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=0.2)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
@@ -60,10 +60,10 @@ test_model = model_generator()
 model = test_model.linear_model(num_obs=10000,
                                 num_covariates=1,
                                 beta_type='bm_std',
-                                noise=1)
+                                noise=0.0002)
 betas = test_model.params
 covs = test_model.covariates()
-series_plot([covs['Noisy'].cumsum()- test_model.noise, covs['Noisy'].cumsum()],'', legend=True)
+series_plot([covs['Noisy'].cumsum() - test_model.noise, covs['Noisy'].cumsum()],'', legend=True)
 # series_plot(covs['Noisy'].cumsum(),'')
 # test_model.model_plot()
 # test_model.noisy_covariates_plot()

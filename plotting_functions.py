@@ -79,7 +79,7 @@ def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, l
     imageio.mimsave('./Plots/' + gifname + '.gif', images, fps=20)
     
 
-def signal_plot(returns, signals):
+def signal_plot(returns, signals, burn_in):
     
     signals = np.array(signals)
     
@@ -96,7 +96,7 @@ def signal_plot(returns, signals):
     sell_mask = signals <= 0
     
     # Plot buy/sell signals atop price series
-    plt.plot(returns.cumsum()[buy_mask], 'g^', lw=0.01)
-    plt.plot(returns.cumsum()[sell_mask], 'rv', lw=0.01)
+    plt.plot(returns.cumsum().iloc[burn_in+1:7000][buy_mask], 'g^', lw=0.01)
+    plt.plot(returns.cumsum().iloc[burn_in+1:7000][sell_mask], 'rv', lw=0.01)
     
     plt.show()
