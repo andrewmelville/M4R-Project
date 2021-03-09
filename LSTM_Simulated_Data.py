@@ -34,7 +34,7 @@ from models import model_generator
 
 # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
 model = model_generator()
-sim_currency = model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=0.0002)
+sim_currency = model.linear_model(num_obs=10000, num_covariates=30, beta_type='', noise=0)
 sim_betas = model.params
 sim_commods = model.covariates()['Noisy']
 model.model_plot()
@@ -83,31 +83,31 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     
     # Train
     for i in range(nb_timesteps, comm_train_scaled[0].shape[0]-1):
-        train_X.append([np.array(comm_train_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_train_scaled[0].loc[i-nb_timesteps:i])])
-    train_X = np.array(train_X)
+        train_X.append(list(zip(np.array(comm_train_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_train_scaled[0].loc[i-nb_timesteps:i-1]))) + [(0, np.array(cur_train_scaled[0].loc[i]))])
+    train_X = np.array(train_X, dtype=object)
     
     # Validation
     for i in range(nb_timesteps, comm_val_scaled[0].shape[0]-1):
-        val_X.append([np.array(comm_val_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_val_scaled[0].loc[i-nb_timesteps:i])])
-    val_X = np.array(val_X)
-    
+        val_X.append(list(zip(np.array(comm_val_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_val_scaled[0].loc[i-nb_timesteps:i-1]))) + [(0, np.array(cur_val_scaled[0].loc[i]))])
+    val_X = np.array(val_X, dtype=object)
+
     # Test
     for i in range(nb_timesteps, comm_test_scaled[0].shape[0]-1):
-        test_X.append([np.array(comm_test_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_test_scaled[0].loc[i-nb_timesteps:i])])
-    test_X = np.array(test_X)
+        test_X.append(list(zip(np.array(comm_test_scaled[0].loc[i-nb_timesteps:i-1]), np.array(cur_test_scaled[0].loc[i-nb_timesteps:i-1]))) + [(0, np.array(cur_test_scaled[0].loc[i]))])
+    test_X = np.array(test_X, dtype=object)
 
     # prepare data
-    train_X = tf.(train_X)() 
-    # train_y =  tf.convert_to_tensor(train_y)
-    # val_X =  tf.convert_to_tensor(val_X)
-    # val_y =  tf.convert_to_tensor(val_y)
-    # test_X =  tf.convert_to_tensor(test_X)
-    # test_y =  tf.convert_to_tensor(test_y)
+    train_X = tf.convert_to_tensor(train_X, dtype='float64')
+    train_y =  tf.convert_to_tensor(train_y, dtype='float64')
+    val_X =  tf.convert_to_tensor(val_X, dtype='float64')
+    val_y =  tf.convert_to_tensor(val_y, dtype='float64')
+    test_X =  tf.convert_to_tensor(test_X, dtype='float64')
+    test_y =  tf.convert_to_tensor(test_y, dtype='float64')
     
-    return train_X, train_y, val_X, val_y, test_X, test_y, scaler
+    return train_X, train_y, val_X, val_y, test_X, test_y, comm_scaler
 
 lookback = 600
-X_train, y_train, X_val, y_val, X_test, y_test, scaler = makeXy(next_day_returns.dropna(), sim_currency, lookback)
+X_train, y_train, X_val, y_val, X_test, y_test, scaler_comm = makeXy(next_day_returns.dropna(), sim_currency, lookback)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
 
@@ -119,12 +119,15 @@ from keras.models import Model
 from keras.models import load_model
 from keras.callbacks import ModelCheckpoint
 
-input_layer = Input(shape=(2,lookback), dtype='float32')
-lstm_layer = LSTM(10, input_shape=(2,lookback), return_sequences=False)(input_layer)
-dropout_layer = Dropout(0.8)(lstm_layer)
-# dense_layer = Dense(5, activation='tanh')(dropout_layer)
-output_layer = Dense(2, activation='softmax')(dropout_layer)
+input_layer = Input(shape=(lookback+1,2), dtype='float32')
 
+lstm_layer = LSTM(10, input_shape=(lookback+1,2), return_sequences=False)(input_layer)
+
+# dropout_layer = Dropout(0.2)(lstm_layer) 
+
+# dense_layer = Dense(5, activation='tanh')(dropout_layer)
+
+output_layer = Dense(2, activation='softmax')(dropout_layer)
 #%% Defining custom loss function to be used in model training
 
 # def profit_loss(y_true, y_pred):
@@ -134,7 +137,7 @@ output_layer = Dense(2, activation='softmax')(dropout_layer)
 # keras.losses.profit_loss = profit_loss
 #%%
 # loss_bce = keras.losses.BinaryCrossentropy()
-loss_profit = profit_loss
+# loss_profit = profit_loss
 opt = tf.keras.optimizers.Adam()
 
 ts_model = Model(inputs=input_layer,

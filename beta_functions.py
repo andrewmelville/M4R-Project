@@ -39,6 +39,8 @@ class beta_generator:
             return self.brownian()
         elif self.beta_type == 'bm_std':
             return self.brownian()
+        elif self.beta_type == 'constant':
+            return self.constant()
     
     
     def sin_range(self):
@@ -92,6 +94,14 @@ class beta_generator:
         return self.beta_df
     
     def brownian(self):
+        
+        n, d = self.n, self.d
+        
+        self.beta_df = bm_std(d=d, n=n, sigma=self.noise, initial_range=[-0.1,0.6])
+    
+        return self.beta_df
+
+    def constant(self):
         
         n, d = self.n, self.d
         
