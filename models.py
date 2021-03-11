@@ -56,9 +56,8 @@ class model_generator():
                       initial_range=[0,1])
 
         self.output = hold.copy()
-        self.output = self.output.diff(periods=1).fillna(method='backfill')
-        self.output.iloc[0] = hold.iloc[0]
-
+        self.output = np.log(self.output.pct_change() + 1)
+        self.output.iloc[0] = np.log(hold.iloc[0])
         
         self.noise = pd.DataFrame([]).reindex_like(self.params)
         
@@ -81,6 +80,7 @@ class model_generator():
             initial_cond = np.random.gamma(1,0.2)
             # hold.iloc[0] * self.params[commod].iloc[0]            
 
+            # Set initial condition to be some random positive value
             self.true_covariates[commod].iloc[0] = float(initial_cond)
             self.noisy_covariates[commod].iloc[0] = float(initial_cond)
             
@@ -119,19 +119,20 @@ class model_generator():
         ## Plot time series of model and its produced covariates coefficients
         
         if self.lin_model_made == True:
-            # Plot beta time series
+            
+            # Plot currency time series
             plt.figure(figsize=(20,10))
-              
-            # plt.plot(selfoutput.cumsum(), lw=1, label=col)
-            series_plot(self.output.cumsum(),'Currency Model')
-            # plt.plot(self.output.cumsum(), 'b', lw=1, label='Currency')
-            # plt.xlabel('Index')
-            # plt.ylabel('Price')
-            # plt.title('Currency Price Compared to Generated Commodities PRices')
-            # plt.legend(loc=3)
-            # plt.show()
+            
+            plt.title('Simulated Currency Price')
+            plt.xlabel('Index')
+            plt.ylabel('Price')
+    
+            plt.plot(np.exp(self.output).cumprod(), label='Currency Model', lw=1)
+            
+            plt.legend(loc=3)
+
         else:
-            print('Please fit a regression first!')
+            print('Please generate a model first!')
             
     def beta_plot(self):
         
