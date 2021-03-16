@@ -163,7 +163,7 @@ class model_generator():
             # Plot beta time series
             plt.figure(figsize=(20,10))
             for col in self.noisy_covariates.columns:    
-                plt.plot(self.noisy_covariates, lw=1, label=col)
+                plt.plot(np.exp([i for i in self.noisy_covariates[col]]).cumprod(), lw=1, label=col)
            
             # plt.plot(self.output.cumsum(), 'b', lw=2, label='')
             plt.xlabel('Index')
@@ -184,7 +184,7 @@ class model_generator():
             # Plot beta time series
             plt.figure(figsize=(20,10))
             for col in self.true_covariates.columns:    
-                plt.plot(self.true_covariates, lw=1, label=col)
+                plt.plot(np.exp([i for i in self.true_covariates[col]]).cumprod(), lw=1, label=col)
            
             # plt.plot(self.output.cumsum(), 'b', lw=2, label='')
             plt.xlabel('Index')

@@ -24,15 +24,15 @@ def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', lege
     plt.xlabel(xlab)
     plt.ylabel(ylab)
     
-    # Turn data inputs into single pandas dataframe
-    if type(data) == list:
-        data_concat = pd.concat(data, axis=1)
-    else:
-        data_concat = data.copy()
+    # # Turn data inputs into single pandas dataframe
+    # if type(data) == list:
+    #     data_concat = pd.concat(data, axis=1)
+    # else:
+    #     data_concat = data.copy()
     
     # Plot each series onto the axes
-    for i, series in enumerate(data_concat):
-        plt.plot(data_concat[series], label=series, lw=linesize[i])
+    for i, series in enumerate(data):
+        plt.plot(data[series], label=series, lw=linesize[i])
     
     # If legend is asked for, print it
     if legend == True:
@@ -100,3 +100,25 @@ def signal_plot(returns, signals, burn_in):
     plt.plot(returns.cumsum().iloc[burn_in+1:7000][sell_mask], 'rv', lw=0.01)
     
     plt.show()
+
+def pred_truth_vis(y_true, y_pred):
+    
+    plt.figure(figsize=(10,10))
+    plt.title('Visualisation of LSTM Residuals on Scale of Returns')
+    plt.xlabel('True Return')
+    plt.ylabel('Predicted Return')
+    plt.xlim((0.997, 1.003))
+    plt.ylim((0.997, 1.003))
+    plt.scatter(np.exp([i for i in y_true]), np.exp(y_pred), s=1)
+    
+def return_series_vis(y_true, y_pred):
+   
+    plt.figure(figsize=(20,10))
+    plt.title('Visualisation of LSTM Prediction of Log Returns')
+    plt.xlabel('True Return')
+    plt.ylabel('Predicted Return')
+    
+    plt.plot(y_true, lw=2, label='Truth')
+    plt.plot(y_pred,lw=1, label='Prediction')
+    
+    plt.legend()

@@ -233,7 +233,6 @@ class Rolling_LR_OneD():
         
         self.fitted = False
         self.outcome = []
-        
      
         
     def fit(self, outcome, predictor, lookback, intercept = False, true_betas = []):
@@ -248,7 +247,7 @@ class Rolling_LR_OneD():
         self.lookback = lookback
         self.true_betas = true_betas
 
-          # Initialise empty array for beta coefficients
+         # Initialise empty array for beta coefficients
         self.beta_df = pd.DataFrame([[np.nan]]*predictor.shape[0], 
                                     columns = ['Beta'], 
                                     index = predictor.index)

@@ -34,12 +34,25 @@ from models import model_generator
 
 # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
 model = model_generator()
-sim_currency = model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', noise=0.000)
+sim_currency = model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', noise=0.0001)
 sim_betas = model.params
 sim_commods = model.covariates()['Noisy']
-model.model_plot()
+# model.model_plot()
 
 next_day_returns = pd.DataFrame(sim_commods[1])
+def noise_vis(returns, noise):
+    
+    plt.figure(figsize=(20,10))
+    plt.title('Visualisation of the Noise Against the True Commodity Returns')
+    plt.xlabel('Index')
+    plt.ylabel('Value')
+    
+    plt.plot(returns, label='True Commodity Returns') 
+    plt.plot(noise, label='Noise')
+
+    plt.legend()
+    
+noise_vis(model.covariates()['True'][1:], model.noise[1:])
 # series_plot(next_day_returns.cumsum(),'')
 # CBOT_OATS_df = pd.read_csv('Data/Continuous Futures Series/CBOT Rough Rice.csv',
 #                            index_col = 0, skiprows = 0, skipfooter = 1, header = 1, engine = 'python')
@@ -106,7 +119,7 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     test_y =  tf.convert_to_tensor(test_y, dtype='float64')
     
     return train_X, train_y, val_X, val_y, test_X, test_y
-lookback = 600
+lookback = 120
 X_train, y_train, X_val, y_val, X_test, y_test = makeXy(next_day_returns.dropna(), sim_currency, lookback)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
@@ -121,7 +134,8 @@ from keras.callbacks import ModelCheckpoint
 
 input_layer = Input(shape=(lookback+1,1), dtype='float32')
 
-lstm_layer = LSTM(1, input_shape=(lookback+1,1), return_sequences=True)(input_layer)
+lstm_layer = LSTM(12, input_shape=(lookback+1,1),
+                  return_sequences=True)(input_layer)
 
 # dropout_layer = Dropout(0.2)(lstm_layer) 
 
@@ -146,47 +160,44 @@ save_weights_at = os.path.join('keras_models', 'Sim_Data_LSTM_weights')
 save_best = ModelCheckpoint(save_weights_at, monitor='val_loss', verbose=0,
                             save_best_only=True, save_weights_only=False, mode='min',
                             period=1)
+# callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10)
 ts_model.fit(x=X_train, y=y_train, 
-             batch_size=32, epochs=5,
-             verbose=True, callbacks=[save_best], validation_data=(X_val, y_val),
+             batch_size=32, epochs=25,
+             verbose=True, callbacks=[callback], validation_data=(X_val, y_val),
              shuffle=False)
 
-# In[ ]:
+   # In[ ]:
     
-best_model = load_model(os.path.join('keras_models', 'Sim_Data_LSTM_weights'))
+# best_model = load_model(os.path.join('keras_models', 'Sim_Data_LSTM_weights'))
 # best_model = load_model(os.path.join('keras_models', 'Sim_Data_LSTM_weights.01-0.9380.hdf5'), custom_objects={'profit_loss':profit_loss})
 # best_model = load_model(os.path.join('keras_models', 'PRSA_data_Air_Pressure_LSTM_weights.02-0.0128.hdf5'))
-preds = best_model.predict(X_train)
+preds = ts_model.predict(X_train)
 # pred_PRES = scaler.inverse_transform(preds)
 pred_PRES = np.squeeze(preds)
 
 y_train_hat = np.array([pred[-1] for pred in pred_PRES])
-y_train_series = np.exp([i for i in next_day_returns[1][601:int(0.7*10000)]]).cumprod()
+y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))])
+y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
+
+# def lstm_pred_price_vis(y_pred, y_true):
+    
+#     plt.figure(figsize=(20,10))    
+#     plt.title('Visualisation of LSTM Predictions')
+#     plt.xlabel('Index')
+#     plt.ylabel('Value')
+    
+#     plt.plot(np.exp([i for i in y_true]).cumprod(), label='True Series')
+#     plt.plot(np.exp(y_pred)[1:] * np.exp([i for i in y_true]).cumprod()[:-1], label='Predicted Series')
+    
+#     plt.legend()
+    
+# lstm_pred_price_vis(y_train_hat, next_day_returns[1][501:7000])
+
+##%% 
+from plotting_functions import pred_truth_vis, return_series_vis
+    
+pred_truth_vis(model.covariates()['True'][lookback:6999][1].reset_index(drop=True), y_train_hat)
 #%%
-
-def lstm_pred_price_vis(y_pred, y_true):
-    
-    plt.figure(figsize=(20,10))    
-    plt.title('Visualisation of LSTM Predictions')
-    plt.xlabel('Index')
-    plt.ylabel('Value')
-    
-    plt.plot(np.exp([i for i in y_true]).cumprod(), label='True Series')
-    plt.plot(np.exp(y_pred)[1:] * np.exp([i for i in y_true]).cumprod()[:-1], label='Predicted Series')
-    
-    plt.legend()
-    
-lstm_pred_price_vis(y_train_hat, next_day_returns[1][601:7000])
-
-#%% 
-def lstm_res_vis(y_true, y_pred):
-    
-    plt.figure(figsize=(8,8))
-    plt.title('Visualisation of LSTM Residuals')
-    plt.xlabel('True Return')
-    plt.ylabel('Predicted Return')
-    plt.xlim((0.997, 1.003))
-    plt.ylim((0.997, 1.003))
-    plt.scatter(np.exp(y_true), y_pred, s=1)
-    
-lstm_res_vis([i[-1] for i in y_train], np.exp(y_train_hat))
+# return_series_vis(model.covariates()['True'][lookback:6999].reset_index(drop=True), y_train_hat)
+# return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
+pred_truth_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
