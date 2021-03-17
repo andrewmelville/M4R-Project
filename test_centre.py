@@ -26,7 +26,7 @@ test_model = model_generator()
 model = test_model.linear_model(num_obs=10000, 
                                 num_covariates=1, 
                                 beta_type='bm_std',
-                                noise=1)
+                                noise=100)
 # betas = test_model.params
 covs = test_model.covariates()
 
@@ -40,8 +40,8 @@ from rolling_functions import Rolling_LR_OneD
 reg_oneD = Rolling_LR_OneD()
 reg_oneD.fit(covs['Noisy'], model, 120)
 # reg_oneD.beta_plot()
-series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
-
+# series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
+pred_truth_vis(covs['True'][1][120:], reg_oneD.pred_ts['Prediction'].dropna())
 
 # preds = reg_oneD.pred_series()
 # pred_truth_vis(covs['Noisy'][1], preds)
@@ -49,20 +49,26 @@ series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 from models import model_generator
 high_freq_model = model_generator()
 
-cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=0.3)
+cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', beta_sigma=0.000035, noise=1)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
 noise = high_freq_model.noise
-##%%
+
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 30, lookback = 120, noise_props=[0])
+test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 10, lookback = 120)
 # high_freq_model.beta_plot()
 # mean_rev.Residuals()
 #%%
-plt.plot(high_freq_model.params[4]), plt.plot(mean_rev.beta_df[4])
+from plotting_functions import pred_truth_vis
+pred_truth_vis(high_freq_model.covariates()['True'][1], mean_rev.pred_series[1])
+# plt.plot(np.exp([i for i in high_freq_model.covariates()['Noisy'][1][1:]]).cumprod()),plt.plot(np.exp([i for i in mean_rev.pred_series.iloc[121:,1]]).cumprod())
+#%%
+# plt.plot(high_freq_model.params[4]), plt.plot(mean_rev.beta_df[4])
+series_plot(high_freq_model.params,'True Beta Values')
+series_plot(mean_rev.beta_df,'Estimated Beta Values')
 #%%
 from models import model_generator
 

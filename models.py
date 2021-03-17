@@ -32,7 +32,7 @@ class model_generator():
         self.true_covariates = []
         self.noise = []
     
-    def linear_model(self, beta_type = 'bm_std', num_obs = 1000, num_covariates = 3, noise = 0.5):
+    def linear_model(self, beta_type = 'bm_std', beta_sigma = 0.00035, num_obs = 1000, num_covariates = 3, noise = 0.5):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
@@ -44,7 +44,7 @@ class model_generator():
         gen = beta_generator(number=num_obs,
                              dimensions=num_covariates,
                              beta_type=beta_type,
-                             noise=0.0035)
+                             noise=beta_sigma)
         self.params = gen()
 
         # Generate output model time series using Brownian Motion generator function
@@ -52,7 +52,7 @@ class model_generator():
         hold = geo_bm(n = num_obs,
                       d = 1,
                       drift=-0.000002,
-                      sigma=0.0008,
+                      sigma=0.001,
                       initial_range=[0,1])
 
         self.output = hold.copy()
