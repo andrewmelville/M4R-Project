@@ -6,5 +6,5 @@ save_non_project_files = False
 
 [main]
 version = 0.2.0
-recent_files = ['models.py', 'LSTM_Simulated_Data.py', 'test_centre.py', 'rolling_functions.py', 'plotting_functions.py']
+recent_files = []
 

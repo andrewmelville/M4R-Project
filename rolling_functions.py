@@ -240,41 +240,39 @@ class Rolling_LR_OneD():
         ## Regress outcome series on predictors on a rolling window that is 'lookback' long.
         ## Intercept is not fitted by default.
          
-        
-        # Save inputs of regression for later analytics
+        # # Save inputs of regression for later analytics
         self.outcome = outcome[1:] # Remove potential initial condition for a series of returns
         self.predictor = predictor[1:] # Remove potential initial condition for a series of returns
         self.lookback = lookback
         self.true_betas = true_betas
 
-         # Initialise empty array for beta coefficients
-        self.beta_df = pd.DataFrame([[np.nan]]*predictor.shape[0], 
+        # Initialise empty array for beta coefficients
+        self.beta_df = pd.DataFrame([[np.nan]]*self.predictor.shape[0], 
                                     columns = ['Beta'], 
-                                    index = predictor.index)
+                                    index = self.predictor.index)
     
         # Initialise empty array for prediction
-        self.pred_ts = pd.DataFrame([[np.nan]]*predictor.shape[0], 
-                                    index = predictor.index, 
+        self.pred_ts = pd.DataFrame([[np.nan]]*self.predictor.shape[0], 
+                                    index = self.predictor.index, 
                                     columns = ['Prediction'])
 
         # Merge outcome and predictor series into a single dataframe
-        full_df = predictor.copy()
-        full_df['Y'] = outcome
+        full_df = self.predictor.copy()
+        full_df['Y'] = self.outcome
         
         # Foward fill all na entries in full_df
         full_df = full_df.fillna(method='ffill')
         
-        # Compute beta hat estimate
+        # Compute beta hat estimate using one-D result
         cov_mats = full_df.rolling(window=lookback).cov()
         cov_mats.reset_index(inplace=True)
         cov_mats = cov_mats[cov_mats.columns[-2:]]
         cov_mats = cov_mats[cov_mats.index % 2 == 0]
         cov_mats.reset_index(inplace=True, drop=True)
         
-        beta_series = cov_mats['Y'] / cov_mats[predictor.columns[0]]
+        beta_series = cov_mats['Y'] / cov_mats[self.predictor.columns[0]]
 
         self.beta_df['Beta'] = np.array(beta_series)
-
 
         # Fill in prediction series
         self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor[self.predictor.columns[0]]

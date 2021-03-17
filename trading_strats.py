@@ -40,9 +40,9 @@ class MeanReversion():
         # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
             
-            PL_curve_df[noise_level] = self.noisy_trade(currency_returns, true_commods_returns + (noise_level) * noise)
+            PL_curve_df[noise_level] = self.noisy_trade(currency_returns, true_commods_returns + (noise_level * noise))
             print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
-        
+            # print(noise_level * noise)
         # Plot PL Curves
         series_plot(PL_curve_df, 'Strategy Performance Compared to Optimal Performance', legend=True)
         
