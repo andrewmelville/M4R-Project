@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 #%%
 from brownian_motion import geo_bm, bm_std
 # brown = geo_bm(n=10000, d=1, drift = 0.000001, sigma=0.005)
-brown2 = brownian_motion(d=1, n=10000, sigma=0.0035, initial_range=[-0.1,0.6])
+brown2 = geo_bm(d=1, n=10000, sigma=0.0035, initial_range=[-0.1,0.6])
 
 series_plot(brown2, 'Random Walk Plot')
 #%%
@@ -29,15 +29,16 @@ model = test_model.linear_model(num_obs=10000,
                                 noise=0.0005)
 betas = test_model.params
 covs = test_model.covariates()
-# test_model.beta_plot()
+
+test_model.beta_plot()
 # test_model.model_plot()
 # test_model.noisy_covariates_plot()
 # test_model.true_covariates_plot()
-
-
+#%%
+from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
-reg_oneD.fit(covs['Noisy'], model, 600)
+reg_oneD.fit(covs['Noisy'][1:], model[1:], 500)
 # reg_oneD.beta_plot()
 series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 

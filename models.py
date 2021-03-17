@@ -32,7 +32,7 @@ class model_generator():
         self.true_covariates = []
         self.noise = []
     
-    def linear_model(self, beta_type = 'bm_std', num_obs = 1000, num_covariates = 3, noise = 1):
+    def linear_model(self, beta_type = 'bm_std', num_obs = 1000, num_covariates = 3, noise = 0.5):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
@@ -69,16 +69,20 @@ class model_generator():
         # Loop through each commodity
         for commod in self.params:
             
-            # Generate and save vector of noise 
-            self.noise[commod] = np.random.normal(loc = 0, scale = noise, size = num_obs)
-            
-            # Generate and save true covariates and noisy covariates
+            # Generate and save true covariates 
             self.true_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod])
+            
+            # Estimate standard deviation of the commodities
+            commod_sigma = self.true_covariates[commod][1:].std()
+            
+            # Generate and save vector of noise proportional to the standard deviation of each commodity
+            self.noise[commod] = np.random.normal(loc = 0, scale = noise * commod_sigma, size = num_obs)
+            
+            # Add noise ot true covariates to make noisy covariates 
             self.noisy_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod]) + self.noise[commod]
             
             # Set initial conditions for value of commodities
-            initial_cond = np.random.gamma(1,0.2)
-            # hold.iloc[0] * self.params[commod].iloc[0]            
+            initial_cond = np.random.gamma(1,0.2)            
 
             # Set initial condition to be some random positive value
             self.true_covariates[commod].iloc[0] = float(initial_cond)

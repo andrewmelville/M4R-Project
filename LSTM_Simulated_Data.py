@@ -34,7 +34,7 @@ from models import model_generator
 
 # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
 model = model_generator()
-sim_currency = model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', noise=0.0001)
+sim_currency = model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', noise=0.4)
 sim_betas = model.params
 sim_commods = model.covariates()['Noisy']
 # model.model_plot()
@@ -119,8 +119,8 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     test_y =  tf.convert_to_tensor(test_y, dtype='float64')
     
     return train_X, train_y, val_X, val_y, test_X, test_y
-lookback = 120
-X_train, y_train, X_val, y_val, X_test, y_test = makeXy(next_day_returns.dropna(), sim_currency, lookback)
+lookback = 60
+X_train, y_train, X_val, y_val, X_test, y_test = makeXy(next_day_returns[1:], sim_currency[1:], lookback)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
 
@@ -134,12 +134,12 @@ from keras.callbacks import ModelCheckpoint
 
 input_layer = Input(shape=(lookback+1,1), dtype='float32')
 
-lstm_layer = LSTM(12, input_shape=(lookback+1,1),
+lstm_layer = LSTM(10, input_shape=(lookback+1,1),
                   return_sequences=True)(input_layer)
 
-# dropout_layer = Dropout(0.2)(lstm_layer) 
+# dropout_layer = Dropout(0)(lstm_layer) 
 
-# dense_layer = Dense(5, activation='tanh')(dropout_layer)
+# dense_layer = Dense(5, activation='tanh')(lstm_layer)
 
 output_layer = Dense(1, activation='linear')(lstm_layer)
 #%%
@@ -160,9 +160,9 @@ save_weights_at = os.path.join('keras_models', 'Sim_Data_LSTM_weights')
 save_best = ModelCheckpoint(save_weights_at, monitor='val_loss', verbose=0,
                             save_best_only=True, save_weights_only=False, mode='min',
                             period=1)
-# callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=10)
+callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 ts_model.fit(x=X_train, y=y_train, 
-             batch_size=32, epochs=25,
+             batch_size=32, epochs=20,
              verbose=True, callbacks=[callback], validation_data=(X_val, y_val),
              shuffle=False)
 
@@ -177,7 +177,7 @@ pred_PRES = np.squeeze(preds)
 
 y_train_hat = np.array([pred[-1] for pred in pred_PRES])
 y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))])
-y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
+# y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
 
 # def lstm_pred_price_vis(y_pred, y_true):
     
@@ -194,10 +194,9 @@ y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000
 # lstm_pred_price_vis(y_train_hat, next_day_returns[1][501:7000])
 
 ##%% 
-from plotting_functions import pred_truth_vis, return_series_vis
-    
-pred_truth_vis(model.covariates()['True'][lookback:6999][1].reset_index(drop=True), y_train_hat)
-#%%
-# return_series_vis(model.covariates()['True'][lookback:6999].reset_index(drop=True), y_train_hat)
-# return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
+from plotting_functions import pred_truth_vis, return_series_vis    
+pred_truth_vis(model.covariates()['True'][lookback+1:6999][1].reset_index(drop=True), y_train_hat)
+# %%
+# return_series_vis(model.covariates()['True'][lookback+1:6999].reset_index(drop=True), y_train_hat)
+return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
 pred_truth_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)

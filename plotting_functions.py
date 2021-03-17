@@ -119,6 +119,6 @@ def return_series_vis(y_true, y_pred):
     plt.ylabel('Predicted Return')
     
     plt.plot(y_true, lw=2, label='Truth')
-    plt.plot(y_pred,lw=1, label='Prediction')
+    plt.plot(y_pred, '-', lw=1, label='Prediction')
     
     plt.legend()

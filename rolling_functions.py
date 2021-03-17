@@ -242,8 +242,8 @@ class Rolling_LR_OneD():
          
         
         # Save inputs of regression for later analytics
-        self.outcome = outcome
-        self.predictor = predictor
+        self.outcome = outcome[1:] # Remove potential initial condition for a series of returns
+        self.predictor = predictor[1:] # Remove potential initial condition for a series of returns
         self.lookback = lookback
         self.true_betas = true_betas
 
@@ -265,15 +265,16 @@ class Rolling_LR_OneD():
         full_df = full_df.fillna(method='ffill')
         
         # Compute beta hat estimate
-        cov_mats = full_df.rolling(window = lookback).cov()
+        cov_mats = full_df.rolling(window=lookback).cov()
         cov_mats.reset_index(inplace=True)
         cov_mats = cov_mats[cov_mats.columns[-2:]]
         cov_mats = cov_mats[cov_mats.index % 2 == 0]
-        cov_mats.reset_index(inplace=True)
+        cov_mats.reset_index(inplace=True, drop=True)
         
         beta_series = cov_mats['Y'] / cov_mats[predictor.columns[0]]
 
         self.beta_df['Beta'] = np.array(beta_series)
+
 
         # Fill in prediction series
         self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor[self.predictor.columns[0]]
