@@ -26,11 +26,11 @@ test_model = model_generator()
 model = test_model.linear_model(num_obs=10000, 
                                 num_covariates=1, 
                                 beta_type='bm_std',
-                                noise=0.0005)
-betas = test_model.params
-covs = test_model.covariates()
+                                noise=0.5)
+# betas = test_model.params
+# covs = test_model.covariates()
 
-test_model.beta_plot()
+# test_model.beta_plot()
 # test_model.model_plot()
 # test_model.noisy_covariates_plot()
 # test_model.true_covariates_plot()
@@ -49,17 +49,16 @@ series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 from models import model_generator
 high_freq_model = model_generator()
 
-model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=0.0005)
+model = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', noise=1)
 
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
 noise = high_freq_model.noise
-
-from trading_strats import MeanReversion
+#%%
+from trading_strats_optimum_update import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.back_test(model, noisy_covs, noise, chunk_size = 7, lookback = 600)
-
+test = mean_rev.back_test(model, true_covs, noise, chunk_size = 7, lookback = 120,  noise_props=[0,0.2,0.4,0.6,0.8,1])
 # high_freq_model.beta_plot()
 # mean_rev.Residuals()
 #%%
