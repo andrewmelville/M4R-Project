@@ -36,7 +36,6 @@ class MeanReversion():
         
         # Get daily (simple) commodities prices with same contracts as signal_df
         self.daily_prices = pd.DataFrame([])
-        
         for commod in self.noisy_commods_returns:   
             self.daily_prices[commod] = np.exp([i for i in self.noisy_commods_returns[commod]]).cumprod()
         
@@ -46,7 +45,7 @@ class MeanReversion():
         # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
             
-            PL_curve_df["{:.1f}%".format(noise_level*100)] = self.noisy_trade(true_commods_returns + (noise_level * noise), noise_level)
+            PL_curve_df["{:.1f}%".format(noise_level*100)] = self.noisy_trade(true_commods_returns + (noise_level * np.sqrt(noise)), noise_level)
             print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
         
         # Plot PL Curves
@@ -121,21 +120,22 @@ class MeanReversion():
         chunk_list = np.array_split(self.residuals_df, np.floor(len(self.residuals_df) / self.chunk_size))
         
         # Loop through each trading chunk and make a df of that chunks signals
-        for i, chunk in enumerate(chunk_list[:-1]):
+        for i, chunk in enumerate(chunk_list[:]):
     
             # Average residuals over current chunk
-            current_chunk_list = chunk.mean().sort_values(axis=0,ascending = False)
+            current_chunk_list = chunk.mean().sort_values(axis=0, ascending=False)
             
             # Get top three positive residual contracts
             pos_mask = current_chunk_list > 0
             sell_list = current_chunk_list[pos_mask]
             
             # Mask to select month ahead
-            signal_mask = chunk_list[i+1].index
-
+            signal_mask = chunk_list[i].index
+            # print(sell_list[:3], self.daily_prices.diff().loc[signal_mask].mean().sort_values(axis=0, ascending=False)[:3])
+            
             # Assign positive (sell) value to contracts for month ahead
             self.signal_df.loc[signal_mask, sell_list.index[:3]] = 1
-
+ 
             # Get bottom three negative residual contracts
             neg_mask = current_chunk_list < 0
             buy_list = current_chunk_list[neg_mask]
