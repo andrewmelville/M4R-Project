@@ -41,6 +41,8 @@ class beta_generator:
             return self.brownian()
         elif self.beta_type == 'constant':
             return self.constant()
+        elif self.beta_type == 'bm_copy':
+            return self.brownian_copy()
     
     
     def sin_range(self):
@@ -100,6 +102,19 @@ class beta_generator:
         self.beta_df = bm_std(d=d, n=n, sigma=self.noise, initial_range=[-0.1,0.6])
     
         return self.beta_df
+    
+            
+    def hierarchical_brownian_bridge(self):
+        
+        n, d = self.n, self.d
+        
+        bm_hold = bm_std(d=1, n=n, sigma=self.noise, initial_range=[-0.1,0.6])
+        
+        for i in range(d):
+            self.beta_df[i] = bm_hold
+    
+        return self.beta_df
+    
 
     def constant(self):
         

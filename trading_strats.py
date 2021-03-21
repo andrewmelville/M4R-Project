@@ -21,11 +21,14 @@ class MeanReversion():
         self.signals_df = []
     
     
-    def back_test(self, currency_returns, true_commods_returns, noise, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1]):  
+    def back_test(self, currency_returns, true_commods_returns, noise, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1], plot=False, verbose=False, pos_ratio=0.33):  
         
         self.chunk_size = chunk_size
         self.lookback = lookback
         self.noise_props = noise_props
+        self.verbose = verbose
+        self.pos_ratio = pos_ratio
+        
         self.noisy_commods_returns = true_commods_returns + noise # These are the returns that all strategies/models will trade on
         self.currency_returns = currency_returns
         
@@ -40,18 +43,18 @@ class MeanReversion():
             self.daily_prices[commod] = np.exp([i for i in self.noisy_commods_returns[commod]]).cumprod()
         
         # Create empty df to hold PL curves
-        PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
+        self.PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
         
         # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
             
-            PL_curve_df["{:.1f}%".format(noise_level*100)] = self.noisy_trade(true_commods_returns + (noise_level * np.sqrt(noise)), noise_level)
-            print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
+            self.PL_curve_df["{:.1f}%".format(noise_level*100)] = self.noisy_trade(true_commods_returns + (np.sqrt(noise_level) * noise), noise_level)
+            if self.verbose == True:
+                print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
         
         # Plot PL Curves
-        series_plot(PL_curve_df, 'Strategy Performance Compared to Optimal Performance', legend=True)
-        
-        return PL_curve_df
+        if plot == True:
+            series_plot(self.PL_curve_df, 'Strategy Performance Compared to Optimal Performance', legend=True)
     
     
     def noisy_trade(self, added_noise_commods_returns, noise_level):
@@ -75,7 +78,8 @@ class MeanReversion():
         
         # Create df of chunk signals using Signals function
         self.Signals()
-        print('{:.1f}% Noise Level signals generated'.format(noise_level*100))
+        if self.verbose == True:
+            print('{:.1f}% Noise Level signals generated'.format(noise_level*100))
                                                 
         # Multiply signals df by simple daily prices df to get daily P/L for each contract
         commod_PL = self.signal_df * self.daily_prices.diff()
@@ -97,10 +101,11 @@ class MeanReversion():
             
             # Regress currency average onto commodities returns and take # prediction series            
             roll_reg = Rolling_LR_OneD()
-            roll_reg.fit(commods_returns[commod], self.currency_returns, lookback = self.lookback)
-            self.pred_series[commod] = roll_reg.pred_ts
+            roll_reg.fit(commods_returns[commod], self.currency_returns, lookback=self.lookback)
             
+            self.pred_series[commod] = roll_reg.pred_ts
             self.beta_df[commod] = roll_reg.beta_df
+            
             self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.pred_series[commod]
             
             # print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
@@ -119,8 +124,11 @@ class MeanReversion():
         # Split full returns data of commodities into chunks that are to be used as trading windows.
         chunk_list = np.array_split(self.residuals_df, np.floor(len(self.residuals_df) / self.chunk_size))
         
+        # Determine how many positions to take long and short
+        pos_num = int(self.pos_ratio * self.noisy_commods_returns.shape[1])
+        
         # Loop through each trading chunk and make a df of that chunks signals
-        for i, chunk in enumerate(chunk_list[:]):
+        for i, chunk in enumerate(chunk_list[:-1]):
     
             # Average residuals over current chunk
             current_chunk_list = chunk.mean().sort_values(axis=0, ascending=False)
@@ -130,18 +138,17 @@ class MeanReversion():
             sell_list = current_chunk_list[pos_mask]
             
             # Mask to select month ahead
-            signal_mask = chunk_list[i].index
-            # print(sell_list[:3], self.daily_prices.diff().loc[signal_mask].mean().sort_values(axis=0, ascending=False)[:3])
+            signal_mask = chunk_list[i+1].index
             
-            # Assign positive (sell) value to contracts for month ahead
-            self.signal_df.loc[signal_mask, sell_list.index[:3]] = 1
+            # Assign negative (sell) value to contracts for month ahead
+            self.signal_df.loc[signal_mask, sell_list.index[:pos_num]] = -1
  
             # Get bottom three negative residual contracts
             neg_mask = current_chunk_list < 0
             buy_list = current_chunk_list[neg_mask]
             
-            # Assign negative (buy) value to contracts for month ahead
-            self.signal_df.loc[signal_mask, buy_list.index[-3:]] = -1
+            # Assign positive (buy) value to contracts for month ahead
+            self.signal_df.loc[signal_mask, buy_list.index[-pos_num:]] = 1
     
     
     def beta_plot(self):

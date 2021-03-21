@@ -2,12 +2,10 @@
 
 # 15/10/20 Andrew Melville
 # from brownian_motion import walk_generator
-from plotting_functions import series_plot
+from plotting_functions import series_plot, pred_truth_vis
 from beta_functions import beta_generator
-from plotting_functions import series_plot
-
+from models import model_generator
 from rolling_functions import Rolling_LR_OneD
-from plotting_functions import pred_truth_vis
 
 import numpy as np
 import pandas as pd
@@ -19,13 +17,13 @@ brown2 = geo_bm(d=1, n=10000, sigma=0.0035, initial_range=[-0.1,0.6])
 
 series_plot(brown2, 'Random Walk Plot')
 #%%
-from models import model_generator
 
+from models import model_generator
 test_model = model_generator()
 
-model = test_model.linear_model(num_obs=10000, 
+model = test_model.linear_model(num_obs=10000,
                                 num_covariates=1, 
-                                beta_type='bm_std',
+                                beta_type='bm_copy',
                                 beta_sigma=0.0035,
                                 noise=1)
 # betas = test_model.params
@@ -39,32 +37,62 @@ covs = test_model.covariates()
 from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
-reg_oneD.fit(covs['Noisy'], model, 600)
+reg_oneD.fit(covs['Noisy'], model, 200)
 # reg_oneD.beta_plot()
-# series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
-pred_truth_vis(covs['Noisy'][1][600:], [i for i in covs['Noisy'][1][600:]-reg_oneD.pred_ts['Prediction'].dropna()])
+series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
+# plt.scatter(covs['Noisy'][1][600:], covs['Noisy'][1][600:] - reg_oneD.pred_ts['Prediction'].dropna())
+# pred_truth_vis(covs['Noisy'][1][200:], [i for i in (covs['Noisy'][1][200:]-reg_oneD.pred_ts['Prediction'].dropna())])
 
 # preds = reg_oneD.pred_series()
 # pred_truth_vis(covs['Noisy'][1], preds)
 #%%
-from models import model_generator
+from trading_strats import MeanReversion
 high_freq_model = model_generator()
-
-cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', beta_sigma=0.000035, noise=1)
-
+cur_ret = high_freq_model.linear_model(num_obs=10000, 
+                                       num_covariates=30, 
+                                       beta_type='bm_std', 
+                                       beta_sigma=0.0035, 
+                                       noise=1)
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
 noise = high_freq_model.noise
 
-from trading_strats import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 10, lookback = 600, noise_props=[1])
+test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 20, lookback = 200, noise_props=[1], plot=True)
+mean_rev.beta_plot()
+high_freq_model.beta_plot()
+#%%
+from models import model_generator
+from trading_strats import MeanReversion
+profit_loss_vec =[]
+
+def avg_back_test(n):
+    
+    for i in range(n):
+        high_freq_model = model_generator()
+        cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', beta_sigma=0.0035, noise=1)
+        betas = high_freq_model.params
+        noisy_covs = high_freq_model.covariates()['Noisy']
+        true_covs = high_freq_model.covariates()['True']
+        noise = high_freq_model.noise
+        
+        mean_rev = MeanReversion()
+        test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 20, lookback = 200, noise_props=[0])
+        profit_loss_vec.append(mean_rev.PL_curve_df["0.0%"].iloc[-1])
+    
+        print("Test {}/{}".format(i+1, n))
+        
+    print("Average Profit: {:.2f}".format(np.mean(profit_loss_vec)))
+    print("Standard Deviation of Profit: {:.2f}".format(np.std(profit_loss_vec)))
+    
+avg_back_test(100)
 # high_freq_model.beta_plot()
 # mean_rev.Residuals()
 #%%
 from plotting_functions import pred_truth_vis
-pred_truth_vis(high_freq_model.covariates()['Noisy'][1][601:], [i for i in mean_rev.residuals_df[1].dropna()])
+print(len(high_freq_model.covariates()['Noisy'][1][600:]),len([i for i in mean_rev.residuals_df[2].dropna()]))
+# pred_truth_vis(high_freq_model.covariates()['Noisy'][2][600:-30], [i for i in mean_rev.residuals_df[2].dropna().iloc[30:]])
 # plt.plot(np.exp([i for i in high_freq_model.covariates()['Noisy'][1][1:]]).cumprod()),plt.plot(np.exp([i for i in mean_rev.pred_series.iloc[121:,1]]).cumprod())
 #%%
 # plt.plot(high_freq_model.params[4]), plt.plot(mean_rev.beta_df[4])
