@@ -49,9 +49,9 @@ series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 from trading_strats import MeanReversion
 high_freq_model = model_generator()
 cur_ret = high_freq_model.linear_model(num_obs=10000, 
-                                       num_covariates=30, 
+                                       num_covariates=5, 
                                        beta_type='bm_std', 
-                                       beta_sigma=0.0035, 
+                                       beta_sigma=0.035, 
                                        noise=1)
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
@@ -62,6 +62,13 @@ mean_rev = MeanReversion()
 test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 20, lookback = 200, noise_props=[1], plot=True)
 mean_rev.beta_plot()
 high_freq_model.beta_plot()
+#%%
+plt.figure(figsize=(20,10))
+
+for commod in high_freq_model.covariates()['Noisy']:
+    plt.plot(np.exp([i for i in high_freq_model.covariates()['Noisy'][commod]]).cumprod())
+
+plt.plot()
 #%%
 from models import model_generator
 from trading_strats import MeanReversion
