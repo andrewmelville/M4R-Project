@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from plotting_functions import series_plot
 from brownian_motion import geo_bm
 from beta_functions import beta_generator
-
+from ARMA import ARMAmodel
 class model_generator():
     
     
@@ -41,7 +41,7 @@ class model_generator():
     
     
         # Generate beta variables
-        gen = beta_generator(number=num_obs,
+        gen = beta_generator(number=num_obs+1,
                              dimensions=num_covariates,
                              beta_type=beta_type,
                              noise=beta_sigma)
@@ -49,7 +49,7 @@ class model_generator():
 
         # Generate output model time series using Brownian Motion generator function
         # and taking difference to get returns data (which is approx normally distributed)
-        hold = geo_bm(n = num_obs,
+        hold = geo_bm(n = num_obs+1,
                       d = 1,
                       drift=-0.000002,
                       sigma=0.001,
@@ -59,7 +59,7 @@ class model_generator():
         self.output = np.log(self.output.pct_change() + 1)
         self.output.iloc[0] = np.log(hold.iloc[0])
         
-        self.noise = pd.DataFrame([]).reindex_like(self.params)
+        self.arma_noise = pd.DataFrame([]).reindex_like(self.params.drop(index=10000))
         
         # Create each covariate time series model using output and beta series
         # commodity = currency * beta + noise
@@ -76,10 +76,19 @@ class model_generator():
             commod_sigma = self.true_covariates[commod][1:].std()
             
             # Generate and save vector of noise proportional to the standard deviation of each commodity
-            self.noise[commod] = np.random.normal(loc = 0, scale = noise * commod_sigma, size = num_obs)
+            arma = ARMAmodel()
+            self.arma_noise[commod] = arma(n=10000, phi=[0.98], theta=[(i+1)**(-2) for i in range(60)], sigma=0.001, burnin=10000)
+            # np.random.normal(loc = 0, scale = noise * commod_sigma, size = num_obs)
             
-            # Add noise ot true covariates to make noisy covariates 
-            self.noisy_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod][1:]) + self.noise[commod][1:]
+            # Add price signal to covariates price series
+            hold_prices = self.output[1].iloc[1:] * self.params[commod][1:]
+            hold_prices = np.exp([i for i in hold_prices]).cumprod()
+            hold_prices += self.arma_noise[commod][:]
+
+            # Turn noisy covariate prices into series of log returns once more
+            hold_log_returns = hold_prices / hold_prices.shift(1)
+            hold_log_returns = np.log([i for i in hold_log_returns])
+            self.noisy_covariates[commod].iloc[1:-1] = hold_log_returns[1:]
             
             # Set initial conditions for value of commodities
             initial_cond = np.random.gamma(1,0.2)            
@@ -87,6 +96,10 @@ class model_generator():
             # Set initial condition to be some random positive value
             self.true_covariates[commod].iloc[0] = float(initial_cond)
             self.noisy_covariates[commod].iloc[0] = float(initial_cond)
+            
+        # Drop excess days
+        self.output.drop(index=10000, inplace=True)
+        self.params.drop(index=10000, inplace=True)
             
         # Confirm we just made a linear model
         self.lin_model_made = True
@@ -199,6 +212,17 @@ class model_generator():
         else:
             print('Please fit a regression first!')
 
+def log_returns(prices):
+    
+    # This function takes as input a dataframe of prices and returns a dataframe of log returns
+    return np.log(prices / prices.shift())
+    
+def prices(log_returns):
+    
+    # This function takes as input a series of log returns and returns a serires of prices
+    return pd.DataFrame(np.exp([i for i in log_returns]).cumprod())
+    
+    
 ## Notes
 
 

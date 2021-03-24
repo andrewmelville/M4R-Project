@@ -30,7 +30,7 @@ class ARMAmodel():
         self.phi = phi
         self.theta = theta
         self.sigma = sigma
-        self.burnin = min(burnin, len(phi))
+        self.burnin = burnin
         self.p = len(phi)
         self.q = len(theta)
         
@@ -40,23 +40,13 @@ class ARMAmodel():
     def ARMA(self):
         
         # Set initial conditions
-        e = np.random.normal(loc=0, scale=self.sigma, size=2*self.n)
+        e = np.random.normal(loc=0, scale=self.sigma, size=self.burnin + self.n)
         x = np.array([0.0] * (self.n + self.burnin))
-        x[0:self.p] = 0
+        # x[0:max(self.p, self.q)] = 0.0
         
         # Loop to generate full series
         for t in range(max(self.p, self.q), self.n + self.burnin):
-            
-            x[t] = np.dot(x[t-self.p:t], self.phi) + np.dot(e[t-self.q:t], self.theta) + e[t+1]
-            
-        return pd.DataFrame(x[self.burnin:])
-    
-arma = ARMAmodel()
-l=5
-x=arma(n=20000,
-     phi=[1/l for i in range(l)],
-     theta=[0]*40 +[-1]*20,
-     sigma=0.001,
-     burnin=1000)
 
-series_plot(x,'')
+            x[t] = np.dot(x[t-self.p:t], self.phi) + np.dot(e[t-self.q:t], self.theta) + e[t]
+
+        return pd.DataFrame(x[self.burnin:])

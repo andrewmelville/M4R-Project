@@ -16,6 +16,26 @@ from brownian_motion import geo_bm, bm_std
 brown2 = geo_bm(d=1, n=10000, sigma=0.0035, initial_range=[-0.1,0.6])
 
 series_plot(brown2, 'Random Walk Plot')
+
+#%%
+arma = ARMAmodel()
+l=1
+x=arma(n=600,
+      phi=[.98],
+      theta=[(i+1)**(-2) for i in range(60)],
+      sigma=0.001,
+      burnin=10000)
+
+plt.figure(figsize=(15,10))
+plt.xlim((0,100))
+plt.plot(acf(x[0],fft=True, nlags=100))
+
+
+series_plot(x,'')
+# plt.figure(figsize=(15,10))
+# plt.plot(periodogram(x[0])[1])
+
+# plt.plot(periodogram(x[0])[1])
 #%%
 
 from models import model_generator
@@ -23,7 +43,7 @@ test_model = model_generator()
 
 model = test_model.linear_model(num_obs=10000,
                                 num_covariates=1, 
-                                beta_type='bm_copy',
+                                beta_type='bm_std',
                                 beta_sigma=0.0035,
                                 noise=1)
 # betas = test_model.params
@@ -33,11 +53,14 @@ covs = test_model.covariates()
 # test_model.model_plot()
 # test_model.noisy_covariates_plot()
 # test_model.true_covariates_plot()
-##%%
+
+plt.figure(figsize=(20,10))
+plt.plot(np.exp([i for i in covs['Noisy'][1]]).cumprod()), plt.plot(np.exp([i for i in covs['True'][1]]).cumprod())
+#%%
 from rolling_functions import Rolling_LR_OneD
 
 reg_oneD = Rolling_LR_OneD()
-reg_oneD.fit(covs['Noisy'], model, 200)
+reg_oneD.fit(covs['Noisy'], model, 1000)
 # reg_oneD.beta_plot()
 series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 # plt.scatter(covs['Noisy'][1][600:], covs['Noisy'][1][600:] - reg_oneD.pred_ts['Prediction'].dropna())
