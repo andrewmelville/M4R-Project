@@ -4,13 +4,13 @@
 # 15/10/20 Andrew Melville
 
 import pandas as pd
-from brownian_motion import geo_bm, bm_std
+from brownian_motion import geo_bm, bm_std, brownian_bridge
 import numpy as np
 
 class beta_generator:
     
     
-    def __init__(self, beta_type, number, dimensions, freq = 10, noise = 0.0035):
+    def __init__(self, beta_type, number, dimensions, freq = 10, noise = 0.0035, t=0.5):
         
         # Initialise class variables determining vector size, dimensions, and beta generator type
         self.beta_type = beta_type
@@ -18,9 +18,10 @@ class beta_generator:
         self.d = dimensions
         self.freq = freq
         self.noise = noise
+        self.t = t # correlation in brownian bridge
         
         # Initialise empty beta array and array of linespace to be operated on
-        self.beta_df = pd.DataFrame([], index = [l for l in range(self.n)], columns = [m for m in range(self.d)])
+        self.beta_df = pd.DataFrame([], index = [l for l in range(self.n)], columns = [m for m in range(1,self.d+1)])
         self.line = np.linspace(0,self.n,self.n)
         
         
@@ -43,6 +44,8 @@ class beta_generator:
             return self.constant()
         elif self.beta_type == 'bm_copy':
             return self.brownian_copy()
+        elif self.beta_type == 'cor_bb':
+            return self.correlated_bridge()
     
     
     def sin_range(self):
@@ -123,7 +126,30 @@ class beta_generator:
         self.beta_df = bm_std(d=d, n=n, sigma=self.noise, initial_range=[-0.1,0.6])
     
         return self.beta_df
+    
+    
+    def correlated_bridge(self):
+        
+        n, d, t = self.n, self.d, self.t
+        
+        # Generate master bridge that all other beta series are derived from
+        master_bridge = t * brownian_bridge(n=n, sigma=0.01, initial_range=[-0.2,0.8], final_range=[-0.2,0.8])
+        master_bridge = pd.DataFrame([master_bridge for i in range(d)]).transpose()
+        master_bridge.columns = [c+1 for c in range(d)]
+        
+        # Create corrletaed beta series
+        for k in range(d):
+            
+            # Generate seperate Brownian Bridge
+            hold_bb = brownian_bridge(n=10001, sigma=0.01, initial_range=[-0.25,0.75], final_range=[-0.25,0.75])
 
+            # Generate seperate independent brownian bridges
+            self.beta_df[k+1] = hold_bb 
+        
+            # Take convex combination
+        self.beta_df = (1-t)*self.beta_df + master_bridge
+        
+        return self.beta_df
 
 ## Notes
 

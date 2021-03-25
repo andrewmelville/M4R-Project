@@ -32,10 +32,6 @@ plt.plot(acf(x[0],fft=True, nlags=100))
 
 
 series_plot(x,'')
-# plt.figure(figsize=(15,10))
-# plt.plot(periodogram(x[0])[1])
-
-# plt.plot(periodogram(x[0])[1])
 #%%
 
 from models import model_generator
@@ -45,7 +41,7 @@ model = test_model.linear_model(num_obs=10000,
                                 num_covariates=1, 
                                 beta_type='bm_std',
                                 beta_sigma=0.0035,
-                                noise=1)
+                                noise=0.0001)
 # betas = test_model.params
 covs = test_model.covariates()
 
@@ -56,11 +52,12 @@ covs = test_model.covariates()
 
 plt.figure(figsize=(20,10))
 plt.plot(np.exp([i for i in covs['Noisy'][1]]).cumprod()), plt.plot(np.exp([i for i in covs['True'][1]]).cumprod())
+# plt.scatter(covs['Noisy'][1][1:], covs['True'][1][1:])
 #%%
 from rolling_functions import Rolling_LR_OneD
-
+t = 1
 reg_oneD = Rolling_LR_OneD()
-reg_oneD.fit(covs['Noisy'], model, 1000)
+reg_oneD.fit((1-t)*covs['True'][1:] + t*covs['Noisy'][1:], model, 120)
 # reg_oneD.beta_plot()
 series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 # plt.scatter(covs['Noisy'][1][600:], covs['Noisy'][1][600:] - reg_oneD.pred_ts['Prediction'].dropna())
@@ -70,26 +67,31 @@ series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 # pred_truth_vis(covs['Noisy'][1], preds)
 #%%
 from trading_strats import MeanReversion
+from models import model_generator
+
 high_freq_model = model_generator()
 cur_ret = high_freq_model.linear_model(num_obs=10000, 
-                                       num_covariates=5, 
-                                       beta_type='bm_std', 
-                                       beta_sigma=0.035, 
-                                       noise=1)
+                                       num_covariates=10, 
+                                       beta_type='cor_bb', 
+                                       beta_sigma=0.0035, 
+                                       noise=0.0001,
+                                       t=0.6)
 betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
-noise = high_freq_model.noise
-
-mean_rev = MeanReversion()
-test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 20, lookback = 200, noise_props=[1], plot=True)
-mean_rev.beta_plot()
+noise = high_freq_model.arma_noise
 high_freq_model.beta_plot()
+#%%
+from trading_strats import MeanReversion
+mean_rev = MeanReversion()
+test = mean_rev.back_test(cur_ret, true_covs, noisy_covs, chunk_size=20, lookback=200, noise_props=[0,0.33,0.66,1], plot=True, pos_ratio=1/30)
+# mean_rev.beta_plot()
+# high_freq_model.beta_plot()
 #%%
 plt.figure(figsize=(20,10))
 
 for commod in high_freq_model.covariates()['Noisy']:
-    plt.plot(np.exp([i for i in high_freq_model.covariates()['Noisy'][commod]]).cumprod())
+    plt.plot(np.exp([i for i in high_freq_model.covariates()['True'][commod]]).cumprod())
 
 plt.plot()
 #%%
@@ -101,22 +103,22 @@ def avg_back_test(n):
     
     for i in range(n):
         high_freq_model = model_generator()
-        cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='bm_std', beta_sigma=0.0035, noise=1)
+        cur_ret = high_freq_model.linear_model(num_obs=10000, num_covariates=30, beta_type='cor_bb', beta_sigma=0.0035, noise=0.0001, t=0.6)
         betas = high_freq_model.params
         noisy_covs = high_freq_model.covariates()['Noisy']
         true_covs = high_freq_model.covariates()['True']
         noise = high_freq_model.noise
-        
+         
         mean_rev = MeanReversion()
-        test = mean_rev.back_test(cur_ret, true_covs, noise, chunk_size = 20, lookback = 200, noise_props=[0])
-        profit_loss_vec.append(mean_rev.PL_curve_df["0.0%"].iloc[-1])
+        test = mean_rev.back_test(cur_ret, true_covs, noisy_covs, chunk_size = 25, lookback = 120, noise_props=[1])
+        profit_loss_vec.append(mean_rev.PL_curve_df["100.0%"].iloc[-1])
     
         print("Test {}/{}".format(i+1, n))
         
     print("Average Profit: {:.2f}".format(np.mean(profit_loss_vec)))
     print("Standard Deviation of Profit: {:.2f}".format(np.std(profit_loss_vec)))
     
-avg_back_test(100)
+avg_back_test(2)
 # high_freq_model.beta_plot()
 # mean_rev.Residuals()
 #%%

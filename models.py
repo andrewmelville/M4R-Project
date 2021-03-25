@@ -32,7 +32,7 @@ class model_generator():
         self.true_covariates = []
         self.noise = []
     
-    def linear_model(self, beta_type = 'bm_std', beta_sigma = 0.00035, num_obs = 1000, num_covariates = 3, noise = 0.5):
+    def linear_model(self, beta_type = 'bm_std', beta_sigma=0.00035, num_obs=1000, num_covariates=3, noise=0.5, t=0.5):
         
         ## Generate an observation of a linear model according to the 
         ## specifications taken as input.
@@ -44,7 +44,8 @@ class model_generator():
         gen = beta_generator(number=num_obs+1,
                              dimensions=num_covariates,
                              beta_type=beta_type,
-                             noise=beta_sigma)
+                             noise=beta_sigma,
+                             t=t)
         self.params = gen()
 
         # Generate output model time series using Brownian Motion generator function
@@ -59,36 +60,37 @@ class model_generator():
         self.output = np.log(self.output.pct_change() + 1)
         self.output.iloc[0] = np.log(hold.iloc[0])
         
+        # Create Empty ARMA Noise dataframe
         self.arma_noise = pd.DataFrame([]).reindex_like(self.params.drop(index=10000))
         
         # Create each covariate time series model using output and beta series
         # commodity = currency * beta + noise
-        self.true_covariates = pd.DataFrame([]).reindex_like(self.params)
+        self.true_covariates = pd.DataFrame([]).reindex_like(self.params.drop(index=10000))
         self.noisy_covariates = self.true_covariates.copy()
         
         # Loop through each commodity
         for commod in self.params:
             
             # Generate and save true covariates 
-            self.true_covariates[commod].iloc[1:] = (self.output[1].iloc[1:] * self.params[commod])
+            self.true_covariates[commod].iloc[:] = (self.output[1].iloc[:] * self.params[commod])
             
             # Estimate standard deviation of the commodities
-            commod_sigma = self.true_covariates[commod][1:].std()
+            # commod_sigma = self.true_covariates[commod][:].std()
             
             # Generate and save vector of noise proportional to the standard deviation of each commodity
             arma = ARMAmodel()
-            self.arma_noise[commod] = arma(n=10000, phi=[0.98], theta=[(i+1)**(-2) for i in range(60)], sigma=0.001, burnin=10000)
+            self.arma_noise[commod] = arma(n=10000, phi=[0.98], theta=[(i+1)**(-2) for i in range(60)], sigma=noise, burnin=10000)
             # np.random.normal(loc = 0, scale = noise * commod_sigma, size = num_obs)
             
             # Add price signal to covariates price series
-            hold_prices = self.output[1].iloc[1:] * self.params[commod][1:]
+            hold_prices = self.true_covariates[commod]
             hold_prices = np.exp([i for i in hold_prices]).cumprod()
             hold_prices += self.arma_noise[commod][:]
 
             # Turn noisy covariate prices into series of log returns once more
             hold_log_returns = hold_prices / hold_prices.shift(1)
             hold_log_returns = np.log([i for i in hold_log_returns])
-            self.noisy_covariates[commod].iloc[1:-1] = hold_log_returns[1:]
+            self.noisy_covariates[commod].iloc[1:] = hold_log_returns[1:]
             
             # Set initial conditions for value of commodities
             initial_cond = np.random.gamma(1,0.2)            

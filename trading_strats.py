@@ -21,16 +21,16 @@ class MeanReversion():
         self.signals_df = []
     
     
-    def back_test(self, currency_returns, true_commods_returns, noise, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1], plot=False, verbose=False, pos_ratio=0.33):  
+    def back_test(self, currency_returns, true_commods_returns, noisy_commods_returns, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1], plot=False, verbose=False, pos_ratio=1/3):  
         
-        self.chunk_size = chunk_size
-        self.lookback = lookback
-        self.noise_props = noise_props
-        self.verbose = verbose
-        self.pos_ratio = pos_ratio
+        self.chunk_size = chunk_size        # Size of each trading period
+        self.lookback = lookback            # Number of days considered in each regression
+        self.noise_props = noise_props      # What proportion of the full noise is included in fitting residuals
+        self.verbose = verbose              # Print fitting checkpoints
+        self.pos_ratio = pos_ratio          # What proportion of the full basket of commoditis to long and short in
         
-        self.noisy_commods_returns = true_commods_returns + noise # These are the returns that all strategies/models will trade on
-        self.currency_returns = currency_returns
+        self.noisy_commods_returns = noisy_commods_returns # These are the returns that all strategies/models will trade on
+        self.currency_returns = currency_returns # Currency returns for LR fit
         
         # Create empty residual dataframe
         self.residuals_df = pd.DataFrame([0]).reindex_like(self.noisy_commods_returns)
@@ -47,34 +47,25 @@ class MeanReversion():
         
         # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
-            
-            self.PL_curve_df["{:.1f}%".format(noise_level*100)] = self.noisy_trade(true_commods_returns + (np.sqrt(noise_level) * noise), noise_level)
+
+            self.PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level)
             if self.verbose == True:
                 print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
         
         # Plot PL Curves
         if plot == True:
-            series_plot(self.PL_curve_df, 'Strategy Performance Compared to Optimal Performance', legend=True)
+            series_plot(self.PL_curve_df, 'Strategy Performance for Different Noise Levels', legend=True)
     
-    
-    def noisy_trade(self, added_noise_commods_returns, noise_level):
         
-        ## This function estimates the residuals using some specified model (currently LR only)
-        ## and calls the class function 'trade' to compute a PL curve for the generated residuals.
-        
-        # Create df of chunk signals using Signals function
-        self.Residuals(added_noise_commods_returns)
-        
-        # Perform trade algorithm
-        return self.trade(noise_level)
-    
-    
-    def trade(self, noise_level):
+    def trade(self, added_noise_commods_returns, noise_level):
         
         ## This function creates a signal from the class variable dataframe of residuals
         ## which are clauclated before this function is called. It then performs
         ## the trading over the testing period by multiplying this signal df
         ## against the prices for each day to generate a PL curve.
+        
+        # Create df of chunk signals using Signals function
+        self.Residuals(added_noise_commods_returns)
         
         # Create df of chunk signals using Signals function
         self.Signals()
@@ -92,9 +83,9 @@ class MeanReversion():
         
     def Residuals(self, commods_returns):
         
-        ## This function creates a dataframe of commoditiy residuals from a 
+        ## This function creates a dataframe of commodity residuals from a 
         ## rolling linear regression onto a currency averages returns. These residuals
-        ## will then be used to create several dataframes of trading signals.
+        ## will then be used to create dataframes of trading signals for each trading period.
         
         # Loop through each commodity
         for i, commod in enumerate(commods_returns.columns):
@@ -126,7 +117,7 @@ class MeanReversion():
         
         # Determine how many positions to take long and short
         pos_num = int(self.pos_ratio * self.noisy_commods_returns.shape[1])
-        
+
         # Loop through each trading chunk and make a df of that chunks signals
         for i, chunk in enumerate(chunk_list[:-1]):
     
@@ -142,14 +133,17 @@ class MeanReversion():
             
             # Assign negative (sell) value to contracts for month ahead
             self.signal_df.loc[signal_mask, sell_list.index[:pos_num]] = -1
- 
+            # print(sell_list.index[:pos_num])
             # Get bottom three negative residual contracts
             neg_mask = current_chunk_list < 0
             buy_list = current_chunk_list[neg_mask]
             
             # Assign positive (buy) value to contracts for month ahead
             self.signal_df.loc[signal_mask, buy_list.index[-pos_num:]] = 1
-    
+            # print(buy_list.index[-pos_num:])
+            # print(self.signal_df)
+            # break
+            
     
     def beta_plot(self):
      

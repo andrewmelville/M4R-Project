@@ -43,11 +43,11 @@ def geo_bm(d = 3, n = 100, drift = 0, sigma = 1, initial_range = [0,1]):
         # brownian_df[dim+1] = sigma * np.array(z_df[dim+1], dtype=float)
     return brownian_df
 
-def bm_std(d = 3, n = 100, sigma = 1, initial_range = [0,1]):
+def bm_std(d=3, n=100, sigma=1, initial_range=[0,1]):
     
-    # x0 -- Initial starting point for walk (default = 100)
+    # x0 -- Initial starting point for walk
     # d -- number of dimensions of walk (default = 1)
-    # n -- length of walk
+    # n -- length of walk (default = 100)
     # drift -- mean of indpendent increments (default = 0)
     # sigma -- variance (volatility) of independent increments 
     
@@ -73,6 +73,19 @@ def bm_std(d = 3, n = 100, sigma = 1, initial_range = [0,1]):
     brownian_df = increments_df.cumsum()
        
     return brownian_df
+
+def brownian_bridge(n=100, sigma=1, initial_range=[0,1], final_range=[0,1]):
+    
+    # Generate standard brownian motion with given initial condition
+    W = bm_std(n=n, d=1, sigma=sigma, initial_range=initial_range)
+
+    # Determine final condition for Brownian Bridge
+    final_condition = np.random.uniform(final_range[0], final_range[1])
+    
+    # Construct Brownian bridge
+    B = W.values - pd.DataFrame([((t+1)/n) * (float(W.loc[n-1]) - final_condition) for t in range(n)])
+
+    return B[0].values.astype('float')
 
 
 ## Notes
