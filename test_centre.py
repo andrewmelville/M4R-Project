@@ -18,9 +18,11 @@ brown2 = geo_bm(d=1, n=10000, sigma=0.0035, initial_range=[-0.1,0.6])
 series_plot(brown2, 'Random Walk Plot')
 
 #%%
+from ARMA import ARMAmodel
+from statsmodels.tsa.stattools import acf
 arma = ARMAmodel()
 l=1
-x=arma(n=600,
+x=arma(n=10000,
       phi=[.98],
       theta=[(i+1)**(-2) for i in range(60)],
       sigma=0.001,
@@ -57,7 +59,7 @@ plt.plot(np.exp([i for i in covs['Noisy'][1]]).cumprod()), plt.plot(np.exp([i fo
 from rolling_functions import Rolling_LR_OneD
 t = 1
 reg_oneD = Rolling_LR_OneD()
-reg_oneD.fit((1-t)*covs['True'][1:] + t*covs['Noisy'][1:], model, 120)
+reg_oneD.fit((1-t)*covs['True'][1:] + t*covs['Noisy'][1:], model, 2)
 # reg_oneD.beta_plot()
 series_plot(test_model.params.join(reg_oneD.beta_df), '', legend=True)
 # plt.scatter(covs['Noisy'][1][600:], covs['Noisy'][1][600:] - reg_oneD.pred_ts['Prediction'].dropna())
@@ -71,7 +73,7 @@ from models import model_generator
 
 high_freq_model = model_generator()
 cur_ret = high_freq_model.linear_model(num_obs=10000, 
-                                       num_covariates=10, 
+                                       num_covariates=30, 
                                        beta_type='cor_bb', 
                                        beta_sigma=0.0035, 
                                        noise=0.0001,
@@ -80,11 +82,18 @@ betas = high_freq_model.params
 noisy_covs = high_freq_model.covariates()['Noisy']
 true_covs = high_freq_model.covariates()['True']
 noise = high_freq_model.arma_noise
-high_freq_model.beta_plot()
+# high_freq_model.beta_plot()
 #%%
 from trading_strats import MeanReversion
 mean_rev = MeanReversion()
-test = mean_rev.back_test(cur_ret, true_covs, noisy_covs, chunk_size=20, lookback=200, noise_props=[0,0.33,0.66,1], plot=True, pos_ratio=1/30)
+test = mean_rev.back_test(cur_ret,
+                          true_covs,
+                          noisy_covs, 
+                          chunk_size=25, 
+                          lookback=120, 
+                          noise_props=[0,1/3,2/3,1], 
+                          plot=True, 
+                          pos_ratio=1/3)
 # mean_rev.beta_plot()
 # high_freq_model.beta_plot()
 #%%
@@ -166,3 +175,28 @@ plt.plot(np.exp(next_day_returns[1].astype(float)).cumprod())
 # CBOT_OATS_df = pd.read_csv('Data/Continuous Futures Series/CBOT Rough Rice.csv',
 #                            index_col = 0, skiprows = 0, skipfooter = 1, header = 1, engine = 'python')
 # next_day_returns = pd.DataFrame(CBOT_OATS_df['Close'].diff(1))
+
+
+#%%
+
+from models import model_generator
+
+# Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
+model = model_generator()
+sim_currency = model.linear_model(num_obs=10000, 
+                                       num_covariates=2, 
+                                       beta_type='cor_bb', 
+                                       beta_sigma=0.0035, 
+                                       noise=0.0001,
+                                       t=0.6)
+sim_betas = model.params
+sim_commods = model.covariates()['Noisy']
+# model.model_plot()
+
+next_day_returns = pd.DataFrame(sim_commods[1])
+#%%
+from rolling_functions import LSTM_predictor
+
+lstm_class = LSTM_predictor()
+lstm_class.train(next_day_returns[1:], sim_currency[1:], 120)
+lstm_class.test()

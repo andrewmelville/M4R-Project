@@ -1,4 +1,4 @@
-from rolling_functions import Rolling_LR, Rolling_LR_OneD
+from rolling_functions import Rolling_LR, Rolling_LR_OneD, LSTM_predictor
 from plotting_functions import series_plot
 import pandas as pd
 import numpy as np
@@ -30,45 +30,56 @@ class MeanReversion():
         self.pos_ratio = pos_ratio          # What proportion of the full basket of commoditis to long and short in
         
         self.noisy_commods_returns = noisy_commods_returns # These are the returns that all strategies/models will trade on
-        self.currency_returns = currency_returns # Currency returns for LR fit
+        self.currency_returns = currency_returns # Currency returns for model fitting
         
         # Create empty residual dataframe
         self.residuals_df = pd.DataFrame([0]).reindex_like(self.noisy_commods_returns)
+        
         self.beta_df = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
-        self.pred_series = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
+        self.LR_pred_series = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
+        self.LSTM_pred_series = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
         
         # Get daily (simple) commodities prices with same contracts as signal_df
         self.daily_prices = pd.DataFrame([])
         for commod in self.noisy_commods_returns:   
             self.daily_prices[commod] = np.exp([i for i in self.noisy_commods_returns[commod]]).cumprod()
         
-        # Create empty df to hold PL curves
-        self.PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
+        # Create empty dfs to hold PL curves
+        self.LR_PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
+        self.LSTM_PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
         
         # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
 
-            self.PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level)
+            self.LR_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LR")
+            self.LSTM_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LSTM")
+            
             if self.verbose == True:
-                print("Trade on {:.1f}% Noise Level Complete".format(noise_level*100))
+                print("Trades on {:.1f}% Noise Level Complete".format(noise_level*100))
         
         # Plot PL Curves
         if plot == True:
-            series_plot(self.PL_curve_df, 'Strategy Performance for Different Noise Levels', legend=True)
+            series_plot(self.LR_PL_curve_df, 'Linear Regression Performance for Different Noise Levels', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True)
+            series_plot(self.LSTM_PL_curve_df, 'LSTM Performance for Different Noise Levels', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True)
     
         
-    def trade(self, added_noise_commods_returns, noise_level):
+    def trade(self, added_noise_commods_returns, noise_level, model):
         
         ## This function creates a signal from the class variable dataframe of residuals
         ## which are clauclated before this function is called. It then performs
         ## the trading over the testing period by multiplying this signal df
         ## against the prices for each day to generate a PL curve.
         
-        # Create df of chunk signals using Signals function
-        self.Residuals(added_noise_commods_returns)
+        # Create dfs of chunk signals using signals function for chosen model
+        if model == "LR":
+            self.LR_Residuals(added_noise_commods_returns)
         
+        elif model == "LSTM":
+            self.LSTM_Residuals(added_noise_commods_returns)
+            
         # Create df of chunk signals using Signals function
         self.Signals()
+        
         if self.verbose == True:
             print('{:.1f}% Noise Level signals generated'.format(noise_level*100))
                                                 
@@ -81,7 +92,7 @@ class MeanReversion():
         return PL_curve
     
         
-    def Residuals(self, commods_returns):
+    def LR_Residuals(self, commods_returns):
         
         ## This function creates a dataframe of commodity residuals from a 
         ## rolling linear regression onto a currency averages returns. These residuals
@@ -92,14 +103,33 @@ class MeanReversion():
             
             # Regress currency average onto commodities returns and take # prediction series            
             roll_reg = Rolling_LR_OneD()
-            roll_reg.fit(commods_returns[commod], self.currency_returns, lookback=self.lookback)
+            roll_reg.fit(commods_returns[commod].iloc[int(0.5*commods_returns.shape[0]):], self.currency_returns.iloc[int(0.5*commods_returns.shape[0]):], lookback=self.lookback)
             
-            self.pred_series[commod] = roll_reg.pred_ts
+            self.LR_pred_series[commod] = roll_reg.pred_ts
             self.beta_df[commod] = roll_reg.beta_df
             
-            self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.pred_series[commod]
+            self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.LR_pred_series[commod]
             
             # print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
+            
+    def LSTM_Residuals(self, commods_returns):
+        
+        ## This function creates a dataframe of commodity residuals from a 
+        ## LSTM model. These residuals will then be used to create dataframes 
+        ## of trading signals for each trading period.
+        
+        # Loop through each commodity
+        for i, commod in enumerate(commods_returns.columns):
+            
+            # Regress currency average onto commodities returns and take # prediction series    
+            lstm_class = LSTM_predictor()
+            
+            lstm_class.train(pd.DataFrame(commods_returns[commod]), self.currency_returns, lookback=self.lookback)
+            self.LSTM_pred_series[commod].iloc[int(0.5*commods_returns.shape[0]) + self.lookback + 1:] = lstm_class.test()
+            
+            self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.LSTM_pred_series[commod]
+            
+            print('{} LSTM residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
     
     
     def Signals(self):

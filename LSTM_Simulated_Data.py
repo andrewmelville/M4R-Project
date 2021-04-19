@@ -34,7 +34,12 @@ from models import model_generator
 
 # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
 model = model_generator()
-sim_currency = model.linear_model(num_obs=10000, num_covariates=1, beta_type='bm_std', noise=0.4)
+sim_currency = model.linear_model(num_obs=10000, 
+                                       num_covariates=2, 
+                                       beta_type='cor_bb', 
+                                       beta_sigma=0.0035, 
+                                       noise=0.0001,
+                                       t=0.6)
 sim_betas = model.params
 sim_commods = model.covariates()['Noisy']
 # model.model_plot()
@@ -93,21 +98,21 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     train_X, train_y, val_X, val_y, test_X, test_y = [], [], [], [], [], []
     
     # Train
-    for i in range(nb_timesteps, comm_train_unscaled[1].shape[0]-1):
-        train_X.append(np.array(cur_train_unscaled[1].loc[i-nb_timesteps:i]))
-        train_y.append(comm_train_unscaled[1].loc[i-nb_timesteps:i])
+    for i in range(nb_timesteps, comm_train_unscaled[comm_col].shape[0]-1):
+        train_X.append(np.array(cur_train_unscaled[cur_col].loc[i-nb_timesteps:i]))
+        train_y.append(comm_train_unscaled[comm_col].loc[i-nb_timesteps:i])
     train_X = np.array(train_X, dtype=object)
     
     # Validation
-    for i in range(nb_timesteps, comm_val_unscaled[1].shape[0]-1):
-        val_X.append(cur_val_unscaled[1].loc[i-nb_timesteps:i])
-        val_y.append(comm_val_unscaled[1].loc[i-nb_timesteps:i])
+    for i in range(nb_timesteps, comm_val_unscaled[comm_col].shape[0]-1):
+        val_X.append(cur_val_unscaled[cur_col].loc[i-nb_timesteps:i])
+        val_y.append(comm_val_unscaled[comm_col].loc[i-nb_timesteps:i])
     val_X = np.array(val_X, dtype=object)
 
     # Test
-    for i in range(nb_timesteps, comm_test_unscaled[1].shape[0]-1):
-        test_X.append(cur_test_unscaled[1].loc[i-nb_timesteps:i])
-        test_y.append(comm_test_unscaled[1].loc[i-nb_timesteps:i])
+    for i in range(nb_timesteps, comm_test_unscaled[comm_col].shape[0]-1):
+        test_X.append(cur_test_unscaled[cur_col].loc[i-nb_timesteps:i])
+        test_y.append(comm_test_unscaled[comm_col].loc[i-nb_timesteps:i])
     test_X = np.array(test_X, dtype=object)
     
     # prepare data
@@ -119,7 +124,7 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     test_y =  tf.convert_to_tensor(test_y, dtype='float64')
     
     return train_X, train_y, val_X, val_y, test_X, test_y
-lookback = 60
+lookback = 120
 X_train, y_train, X_val, y_val, X_test, y_test = makeXy(next_day_returns[1:], sim_currency[1:], lookback)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
@@ -200,3 +205,38 @@ pred_truth_vis(model.covariates()['True'][lookback+1:6999][1].reset_index(drop=T
 # return_series_vis(model.covariates()['True'][lookback+1:6999].reset_index(drop=True), y_train_hat)
 return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
 pred_truth_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
+
+#%%
+second_commods = pd.DataFrame(sim_commods[2])
+X_train, y_train, X_val, y_val, X_test, y_test = makeXy(second_commods[1:], sim_currency[1:], lookback)
+print('Shape of train arrays:', X_train.shape, y_train.shape)
+
+
+preds = ts_model.predict(X_train)
+# pred_PRES = scaler.inverse_transform(preds)
+pred_PRES = np.squeeze(preds)
+
+y_train_hat = np.array([pred[-1] for pred in pred_PRES])
+y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))])
+# y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
+
+# def lstm_pred_price_vis(y_pred, y_true):
+    
+#     plt.figure(figsize=(20,10))    
+#     plt.title('Visualisation of LSTM Predictions')
+#     plt.xlabel('Index')
+#     plt.ylabel('Value')
+    
+#     plt.plot(np.exp([i for i in y_true]).cumprod(), label='True Series')
+#     plt.plot(np.exp(y_pred)[1:] * np.exp([i for i in y_true]).cumprod()[:-1], label='Predicted Series')
+    
+#     plt.legend()
+    
+# lstm_pred_price_vis(y_train_hat, next_day_returns[1][501:7000])
+
+##%% 
+from plotting_functions import pred_truth_vis, return_series_vis    
+pred_truth_vis(model.covariates()['True'][lookback+1:6999][2].reset_index(drop=True), y_train_hat)
+
+return_series_vis(model.covariates()['True'][lookback+9000:-1][2].reset_index(drop=True), y_test_hat)
+pred_truth_vis(model.covariates()['True'][lookback+9000:-1][2].reset_index(drop=True), y_test_hat)

@@ -14,6 +14,16 @@ sns.set_style('whitegrid')
 import warnings
 warnings.filterwarnings("ignore")
 
+import keras
+from keras.layers import Dense, Input, Dropout
+from keras.layers.recurrent import LSTM
+
+from keras.models import Model
+from keras.models import load_model
+from keras.callbacks import ModelCheckpoint
+
+import tensorflow as tf
+
 #%%
 
 class Rolling_LR():
@@ -359,7 +369,181 @@ class Rolling_LR_OneD():
 #%%
 
 
+class LSTM_predictor():
 
+    
+    ## This class takes in a one-dimensional covariate series and an observed series,
+    ## splits the data temporally into training and testing sets, and trains a single LSTM
+    ## regressor. The fitted values can then be returned to be leveraged into residuals for 
+    ## signal generation.
+    
+    def __init__(self):
+        
+        ## Initialise check that regression has not been fitted yet
+        self.fitted = False
+
+    
+    def train(self, outcome, predictor, lookback):
+        
+        # Save lookabck variable
+        self.lookback = lookback
+        
+        # Initialise LSTM Model
+        input_layer = Input(shape=(lookback+1,1), dtype='float32')
+        
+        # lstm_layer = LSTM(10, input_shape=(lookback+1,1),
+        #                   return_sequences=True)(input_layer)
+        lstm_layer = LSTM(10, input_shape=(lookback+1,1),
+                          return_sequences=True)(input_layer)
+        output_layer = Dense(1, activation='linear')(lstm_layer)
+        
+        # Create datasets for training and testing
+        self.X_train, self.y_train, self.X_val, self.y_val, self.X_test, self.y_test = self.makeXy(outcome, predictor, self.lookback)
+        # print('Shape of train arrays:', self.X_train.shape, self.y_train.shape)
+        
+        # Compile Model and begin training
+        self.ts_model = Model(inputs=input_layer,
+                     outputs=output_layer)
+        self.ts_model.compile(loss=tf.keras.losses.MeanSquaredError(),
+                     optimizer=tf.keras.optimizers.Adam())
+    
+        callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+        self.ts_model.fit(x=self.X_train, y=self.y_train, 
+                 batch_size=32, epochs=10,
+                 verbose=False, callbacks=[callback], validation_data=(self.X_val, self.y_val),
+                 shuffle=False)
+        
+        # Confirm that fitting is complete
+        self.fitted = True
+
+    def test(self):
+        
+        self.test_predictions = np.array([pred[-1] for pred in np.squeeze(self.ts_model.predict(self.X_test))])
+        
+        return self. test_predictions
+    
+    def makeXy(self, comm_df, cur_df, nb_timesteps):
+        """
+        Input: 
+                ts: original time series
+                nb_timesteps: number of time steps in the regressors
+        Output: 
+                X: 2-D array of regressors
+                y: 1-D array of target 
+        """
+        
+        ## This function contains the logic for the creation of datasets
+        ## of the correct dimensions to be used in training and testing.
+        
+        # Split data into train/val/test sets
+        n = len(comm_df)
+        
+        # Grab column names
+        comm_col, cur_col = comm_df.columns[0], cur_df.columns[0]
+        
+        # Split full data into train, validation, and test sets
+        comm_train_unscaled, cur_train_unscaled = pd.DataFrame(comm_df[0:int(n*0.4)]).reset_index(drop=True), pd.DataFrame(cur_df[0:int(n*0.4)]).reset_index(drop=True)
+        comm_val_unscaled, cur_val_unscaled = pd.DataFrame(comm_df[int(n*0.4):int(n*0.5)]).reset_index(drop=True), pd.DataFrame(cur_df[int(n*0.4):int(n*0.5)]).reset_index(drop=True)
+        comm_test_unscaled, cur_test_unscaled = pd.DataFrame(comm_df[int(n*0.5):]).reset_index(drop=True), pd.DataFrame(cur_df[int(n*0.5):]).reset_index(drop=True)
+        
+        # Reshape data to be vectors of length nb_timesteps and labels
+        train_X, train_y, val_X, val_y, test_X, test_y = [], [], [], [], [], []
+        
+        # Train
+        for i in range(nb_timesteps, comm_train_unscaled[comm_col].shape[0]-1):
+            train_X.append(np.array(cur_train_unscaled[cur_col].loc[i-nb_timesteps:i]))
+            train_y.append(comm_train_unscaled[comm_col].loc[i-nb_timesteps:i])
+        train_X = np.array(train_X, dtype=object)
+        
+        # Validation
+        for i in range(nb_timesteps, comm_val_unscaled[comm_col].shape[0]-1):
+            val_X.append(cur_val_unscaled[cur_col].loc[i-nb_timesteps:i])
+            val_y.append(comm_val_unscaled[comm_col].loc[i-nb_timesteps:i])
+        val_X = np.array(val_X, dtype=object)
+    
+        # Test
+        for i in range(nb_timesteps, comm_test_unscaled[comm_col].shape[0]-1):
+            test_X.append(cur_test_unscaled[cur_col].loc[i-nb_timesteps:i])
+            test_y.append(comm_test_unscaled[comm_col].loc[i-nb_timesteps:i])
+        test_X = np.array(test_X, dtype=object)
+        
+        # prepare data
+        train_X = tf.convert_to_tensor(train_X, dtype='float64')
+        train_y =  tf.convert_to_tensor(train_y, dtype='float64')
+        val_X =  tf.convert_to_tensor(val_X, dtype='float64')
+        val_y =  tf.convert_to_tensor(val_y, dtype='float64')
+        test_X =  tf.convert_to_tensor(test_X, dtype='float64')
+        test_y =  tf.convert_to_tensor(test_y, dtype='float64')
+        
+        return train_X, train_y, val_X, val_y, test_X, test_y
+    
+        
+
+        
+           
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
 # from sklearn.linear_model import Lasso
 
 # def rolling_lasso(outcome, predictors, lookback, intercept, alph):

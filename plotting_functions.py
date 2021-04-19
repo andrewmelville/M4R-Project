@@ -9,7 +9,7 @@ import imageio
 import numpy as np
 import pandas as pd
 
-def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', legend = False):
+def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', xlim=False, ylim=False, legend = False):
     
     ## This function defines a uniform look for the plots of the data in this project
     
@@ -23,6 +23,11 @@ def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', lege
     plt.title(title)
     plt.xlabel(xlab)
     plt.ylabel(ylab)
+    
+    if not xlim:        
+        plt.xlim(xlim)
+    if not ylim:
+        plt.ylim(ylim)
     
     # # Turn data inputs into single pandas dataframe
     # if type(data) == list:
