@@ -130,10 +130,10 @@ class beta_generator:
     
     def correlated_bridge(self):
         
-        n, d, t = self.n, self.d, self.t
+        n, d, t, noise = self.n, self.d, self.t, self.noise
         
         # Generate master bridge that all other beta series are derived from
-        master_bridge = t * brownian_bridge(n=n, sigma=0.01, initial_range=[-0.2,0.8], final_range=[-0.2,0.8])
+        master_bridge = t * brownian_bridge(n=n, sigma=noise, initial_range=[-0.2,0.8], final_range=[-0.2,0.8])
         master_bridge = pd.DataFrame([master_bridge for i in range(d)]).transpose()
         master_bridge.columns = [c+1 for c in range(d)]
         
@@ -141,7 +141,7 @@ class beta_generator:
         for k in range(d):
             
             # Generate seperate Brownian Bridge
-            hold_bb = brownian_bridge(n=10001, sigma=0.01, initial_range=[-0.25,0.75], final_range=[-0.25,0.75])
+            hold_bb = brownian_bridge(n=n, sigma=noise, initial_range=[-0.25,0.75], final_range=[-0.25,0.75])
 
             # Generate seperate independent brownian bridges
             self.beta_df[k+1] = hold_bb 

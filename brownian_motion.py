@@ -5,7 +5,7 @@ import random
 from plotting_functions import series_plot
 
 
-def geo_bm(d = 3, n = 100, drift = 0, sigma = 1, initial_range = [0,1]):
+def geo_bm(d = 3, n = 100, mu = 0, sigma = 1, initial_range = [0,1]):
 
     # Geometric Brownian Motion Generator
     # This function generates a d-dimensional random walk, returned as a pandas dataframe
@@ -39,7 +39,7 @@ def geo_bm(d = 3, n = 100, drift = 0, sigma = 1, initial_range = [0,1]):
         z_df[dim+1] = increments_df[dim+1].cumsum(axis = 0)
         
         # Generate final model
-        brownian_df[dim+1] = S0[dim] * np.exp(sigma * np.array(z_df[dim+1], dtype=float) + drift * np.array(range(n)), dtype=float)
+        brownian_df[dim+1] = S0[dim] * np.exp(sigma * np.array(z_df[dim+1], dtype=float) + (mu-sigma**2/2) * np.array(range(n)), dtype=float)
         # brownian_df[dim+1] = sigma * np.array(z_df[dim+1], dtype=float)
     return brownian_df
 

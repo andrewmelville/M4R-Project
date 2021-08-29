@@ -267,11 +267,12 @@ class Rolling_LR_OneD():
                                     columns = ['Prediction'])
 
         # Merge outcome and predictor series into a single dataframe
-        full_df = self.predictor.copy()
-        full_df['Y'] = self.outcome
-        
+        full_df = pd.DataFrame(self.predictor.copy())
+        full_df = full_df.join(self.outcome)
+        # return full_df
         # Foward fill all na entries in full_df
-        full_df = full_df.fillna(method='ffill')
+        # full_df = full_df.fillna(method='ffill')
+
         
         # Compute beta hat estimate using one-D result
         cov_mats = full_df.rolling(window=lookback).cov()
@@ -280,12 +281,12 @@ class Rolling_LR_OneD():
         cov_mats = cov_mats[cov_mats.index % 2 == 0]
         cov_mats.reset_index(inplace=True, drop=True)
         
-        beta_series = cov_mats['Y'] / cov_mats[self.predictor.columns[0]]
-
+        beta_series = cov_mats[full_df.columns[1]] / cov_mats[full_df.columns[0]]
+        # print(full_df.columns[1], full_df.columns[0])
         self.beta_df['Beta'] = np.array(beta_series)
 
         # Fill in prediction series
-        self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor[self.predictor.columns[0]]
+        self.pred_ts['Prediction'] = self.beta_df['Beta'] * self.predictor
 
 
         self.fitted = True
@@ -381,8 +382,13 @@ class LSTM_predictor():
         
         ## Initialise check that regression has not been fitted yet
         self.fitted = False
+        import tensorflow as t
+        
+        # Ensure we are working with GPU
+        physical_devices = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(physical_devices[0], enable=True)
+        
 
-    
     def train(self, outcome, predictor, lookback):
         
         # Save lookabck variable
@@ -398,7 +404,7 @@ class LSTM_predictor():
         output_layer = Dense(1, activation='linear')(lstm_layer)
         
         # Create datasets for training and testing
-        self.X_train, self.y_train, self.X_val, self.y_val, self.X_test, self.y_test = self.makeXy(outcome, predictor, self.lookback)
+        self.X_train, self.y_train, self.X_val, self.y_val, self.X_test, self.y_test = self.makeXy(pd.DataFrame(outcome), pd.DataFrame(predictor), self.lookback)
         # print('Shape of train arrays:', self.X_train.shape, self.y_train.shape)
         
         # Compile Model and begin training

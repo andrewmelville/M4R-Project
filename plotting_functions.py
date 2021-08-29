@@ -9,7 +9,7 @@ import imageio
 import numpy as np
 import pandas as pd
 
-def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', xlim=False, ylim=False, legend = False):
+def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', xlim='blank', ylim='blank', legend = False, fontsize=8):
     
     ## This function defines a uniform look for the plots of the data in this project
     
@@ -20,13 +20,17 @@ def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', xlim
     
     # Create the figure
     plt.figure(figsize=(20,10))
-    plt.title(title)
-    plt.xlabel(xlab)
-    plt.ylabel(ylab)
+    plt.title(title,fontsize=fontsize)
+    plt.xlabel(xlab, fontsize=fontsize)
+    plt.ylabel(ylab, fontsize=fontsize)
     
-    if not xlim:        
+    plt.xticks(fontsize=fontsize*0.66)
+    plt.yticks(fontsize=fontsize*0.66)
+    
+    # Set limits if specified
+    if xlim != 'blank':        
         plt.xlim(xlim)
-    if not ylim:
+    if ylim != 'blank':
         plt.ylim(ylim)
     
     # # Turn data inputs into single pandas dataframe
@@ -41,7 +45,7 @@ def series_plot(data, title, linesize = [], xlab = 'Index', ylab = 'Value', xlim
     
     # If legend is asked for, print it
     if legend == True:
-        plt.legend()
+        plt.legend(fontsize=fontsize)
 
 def rolling_beta_plot(covariates, true_coefficients, est_coefficients, output, lookback, gifname, freq = 50):
     
@@ -106,24 +110,28 @@ def signal_plot(returns, signals, burn_in):
     
     plt.show()
 
-def pred_truth_vis(y_true, y_pred):
+def pred_truth_vis(y_true, y_pred, fontsize):
     
     plt.figure(figsize=(10,10))
-    plt.title('Visualisation of LSTM Residuals on Scale of Returns')
-    plt.xlabel('True Return')
-    plt.ylabel('Predicted Return')
+    plt.title('Visualisation of LSTM Residuals on Scale of Returns', fontsize=fontsize)
+    plt.xlabel('True Return', fontsize=fontsize)
+    plt.ylabel('Predicted Return', fontsize=fontsize)
     plt.xlim((0.997, 1.003))
     plt.ylim((0.997, 1.003))
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
     plt.scatter(np.exp([i for i in y_true]), np.exp(y_pred), s=1)
     
-def return_series_vis(y_true, y_pred):
+def return_series_vis(y_true, y_pred, fontsize):
    
     plt.figure(figsize=(20,10))
-    plt.title('Visualisation of LSTM Prediction of Log Returns')
-    plt.xlabel('True Return')
-    plt.ylabel('Predicted Return')
+    plt.title('Visualisation of LSTM Prediction of Log Returns', fontsize=fontsize)
+    plt.xlabel('True Return', fontsize=fontsize)
+    plt.ylabel('Predicted Return', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
     
     plt.plot(y_true, lw=2, label='Truth')
     plt.plot(y_pred, '-', lw=1, label='Prediction')
     
-    plt.legend()
+    plt.legend(fontsize=fontsize)

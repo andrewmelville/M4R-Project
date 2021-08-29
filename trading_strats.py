@@ -3,7 +3,7 @@ from plotting_functions import series_plot
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.stats import spearmanr
 
 class MeanReversion():
     
@@ -21,19 +21,30 @@ class MeanReversion():
         self.signals_df = []
     
     
-    def back_test(self, currency_returns, true_commods_returns, noisy_commods_returns, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1], plot=False, verbose=False, pos_ratio=1/3):  
+    def back_test(self, currency_returns, true_commods_returns, noisy_commods_returns, arma_noise, chunk_size, lookback, noise_props=[0,0.25,0.5,0.75,1], plot=False, verbose=False, pos_ratio=1/3):  
         
         self.chunk_size = chunk_size        # Size of each trading period
         self.lookback = lookback            # Number of days considered in each regression
         self.noise_props = noise_props      # What proportion of the full noise is included in fitting residuals
         self.verbose = verbose              # Print fitting checkpoints
         self.pos_ratio = pos_ratio          # What proportion of the full basket of commoditis to long and short in
-        
+        self.commod_number = true_commods_returns.shape[1]
+
         self.noisy_commods_returns = noisy_commods_returns # These are the returns that all strategies/models will trade on
         self.currency_returns = currency_returns # Currency returns for model fitting
+        self.arma_noise = arma_noise
         
         # Create empty residual dataframe
         self.residuals_df = pd.DataFrame([0]).reindex_like(self.noisy_commods_returns)
+        
+        # Create ground truth ranking based on ARMA noise
+        self.arma_chunk_list = np.array_split(np.log(self.arma_noise / self.arma_noise.shift(1)), np.floor(len(self.arma_noise) / self.chunk_size))
+        self.arma_chunk_rank_list = []
+        
+        for i, arma_chunk in enumerate(self.arma_chunk_list[:-1]):
+    
+            # Average residuals over current chunk
+            self.arma_chunk_rank_list.append(arma_chunk.mean().sort_values(axis=0, ascending=False).index)
         
         self.beta_df = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
         self.LR_pred_series = pd.DataFrame([]).reindex_like(self.noisy_commods_returns)
@@ -46,24 +57,31 @@ class MeanReversion():
         
         # Create empty dfs to hold PL curves
         self.LR_PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
-        self.LSTM_PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
+        # self.LSTM_PL_curve_df = pd.DataFrame([], index = currency_returns.index, columns=["{:.1f}%".format(noise_level*100) for noise_level in noise_props])
         
-        # Perform trade passes at each level of noise in noise_props for comparison of performance
+        # # Perform trade passes at each level of noise in noise_props for comparison of performance
         for noise_level in noise_props:
-
-            self.LR_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LR")
-            self.LSTM_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LSTM")
+            
+            self.LR_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LR", pos_ratio)
+            # self.LSTM_PL_curve_df["{:.1f}%".format(noise_level*100)] = self.trade(((1-noise_level) * true_commods_returns) + (noise_level * noisy_commods_returns), noise_level, "LSTM", pos_rat=pos_ratio)
             
             if self.verbose == True:
                 print("Trades on {:.1f}% Noise Level Complete".format(noise_level*100))
+                # Perform trade passes at each level of noise in noise_props for comparison of performance
         
         # Plot PL Curves
         if plot == True:
-            series_plot(self.LR_PL_curve_df, 'Linear Regression Performance for Different Noise Levels', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True)
-            series_plot(self.LSTM_PL_curve_df, 'LSTM Performance for Different Noise Levels', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True)
-    
+            series_plot(self.LR_PL_curve_df, 'Linear Regression Performance for Different Noise Ratios', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True, fontsize=32)
+            # series_plot(self.LSTM_PL_curve_df, 'LSTM Performance for Different Noise Ratios', xlim=(int(0.5*noisy_commods_returns.shape[0]), int(noisy_commods_returns.shape[0])), legend=True, fontsize=32)
         
-    def trade(self, added_noise_commods_returns, noise_level, model):
+        self.rank_cor_list = []
+        
+        # Calculate Spearman Rank Coefficient between predicted rankings and 'true' rankings
+        for i, arma_chunk in enumerate(self.arma_chunk_rank_list[int(len(self.arma_chunk_rank_list)/2):]):
+
+            self.rank_cor_list.append(spearmanr(arma_chunk, self.pred_chunk_rank_list[i+int(len(self.arma_chunk_rank_list)/2)])[0])
+    
+    def trade(self, added_noise_commods_returns, noise_level, model, pos_rat):
         
         ## This function creates a signal from the class variable dataframe of residuals
         ## which are clauclated before this function is called. It then performs
@@ -76,15 +94,17 @@ class MeanReversion():
         
         elif model == "LSTM":
             self.LSTM_Residuals(added_noise_commods_returns)
-            
+        
+        
         # Create df of chunk signals using Signals function
+        self.pos_ratio = pos_rat
         self.Signals()
         
         if self.verbose == True:
             print('{:.1f}% Noise Level signals generated'.format(noise_level*100))
                                                 
         # Multiply signals df by simple daily prices df to get daily P/L for each contract
-        commod_PL = self.signal_df * self.daily_prices.diff()
+        commod_PL = self.signal_df * self.daily_prices
         
         # Sum across columns for daily P/L, cumsum daily P/L for P/L curve
         PL_curve = commod_PL.sum(axis=1).cumsum()
@@ -108,7 +128,8 @@ class MeanReversion():
             self.LR_pred_series[commod] = roll_reg.pred_ts
             self.beta_df[commod] = roll_reg.beta_df
             
-            self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.LR_pred_series[commod]
+            # self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.LR_pred_series[commod]
+            self.residuals_df[commod] = np.random.normal(0,1,self.LR_pred_series.shape[0])
             
             # print('{} residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
             
@@ -121,14 +142,15 @@ class MeanReversion():
         # Loop through each commodity
         for i, commod in enumerate(commods_returns.columns):
             
-            # Regress currency average onto commodities returns and take # prediction series    
+            # Regress currency average onto commodities returns and take
+            # prediction series    
             lstm_class = LSTM_predictor()
             
             lstm_class.train(pd.DataFrame(commods_returns[commod]), self.currency_returns, lookback=self.lookback)
             self.LSTM_pred_series[commod].iloc[int(0.5*commods_returns.shape[0]) + self.lookback + 1:] = lstm_class.test()
             
             self.residuals_df[commod] = self.noisy_commods_returns[commod] - self.LSTM_pred_series[commod]
-            
+            # self.residuals_df[commod] = np.random.normal(0,1,self.noisy_commods_returns.shape[0])
             print('{} LSTM residuals completed {}/{}'.format(commod, i+1, commods_returns.shape[1]))
     
     
@@ -141,6 +163,7 @@ class MeanReversion():
         
         # Create empty signals df
         self.signal_df = pd.DataFrame([0]).reindex_like(self.residuals_df)
+        self.pred_chunk_rank_list = []
         
         # Split full returns data of commodities into chunks that are to be used as trading windows.
         chunk_list = np.array_split(self.residuals_df, np.floor(len(self.residuals_df) / self.chunk_size))
@@ -153,6 +176,7 @@ class MeanReversion():
     
             # Average residuals over current chunk
             current_chunk_list = chunk.mean().sort_values(axis=0, ascending=False)
+            self.pred_chunk_rank_list.append(current_chunk_list.index)
             
             # Get top three positive residual contracts
             pos_mask = current_chunk_list > 0
@@ -162,19 +186,17 @@ class MeanReversion():
             signal_mask = chunk_list[i+1].index
             
             # Assign negative (sell) value to contracts for month ahead
-            self.signal_df.loc[signal_mask, sell_list.index[:pos_num]] = -1
-            # print(sell_list.index[:pos_num])
+            self.signal_df.loc[signal_mask[0], sell_list.index[:pos_num]] = 1/(2*pos_num)
+            self.signal_df.loc[signal_mask[-1], sell_list.index[:pos_num]] = -1/(2*pos_num)
+            
             # Get bottom three negative residual contracts
             neg_mask = current_chunk_list < 0
             buy_list = current_chunk_list[neg_mask]
             
             # Assign positive (buy) value to contracts for month ahead
-            self.signal_df.loc[signal_mask, buy_list.index[-pos_num:]] = 1
-            # print(buy_list.index[-pos_num:])
-            # print(self.signal_df)
-            # break
-            
-    
+            self.signal_df.loc[signal_mask[0], buy_list.index[-pos_num:]] = -1/(2*pos_num)
+            self.signal_df.loc[signal_mask[-1], buy_list.index[-pos_num:]] = 1/(2*pos_num)
+        
     def beta_plot(self):
      
         ## Plot time series of estimated beta coefficients

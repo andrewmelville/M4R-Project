@@ -35,29 +35,39 @@ from models import model_generator
 # Define a generative model to simulate 10000 days of data for 1 currency basket and 30 commodities
 model = model_generator()
 sim_currency = model.linear_model(num_obs=10000, 
-                                       num_covariates=2, 
+                                       num_covariates=1, 
                                        beta_type='cor_bb', 
                                        beta_sigma=0.0035, 
                                        noise=0.0001,
-                                       t=0.6)
+                                       t=0.55)
 sim_betas = model.params
 sim_commods = model.covariates()['Noisy']
 # model.model_plot()
 
 next_day_returns = pd.DataFrame(sim_commods[1])
-def noise_vis(returns, noise):
+#%%
+def noise_vis(returns, noise, fontsize):
     
     plt.figure(figsize=(20,10))
-    plt.title('Visualisation of the Noise Against the True Commodity Returns')
-    plt.xlabel('Index')
-    plt.ylabel('Value')
-    
+    plt.title('Visualisation of ARMA Noise Against the Implied Commodity Log-Returns', fontsize=fontsize)
+    plt.xlabel('Index', fontsize=fontsize)
+    plt.ylabel('Value', fontsize=fontsize)
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
+
     plt.plot(returns, label='True Commodity Returns') 
     plt.plot(noise, label='Noise')
 
-    plt.legend()
+    plt.legend(fontsize=fontsize)
     
-noise_vis(model.covariates()['True'][1:], model.noise[1:])
+noise_vis(model.covariates()['True'][1:], model.covariates()['Noisy'][1:] - model.covariates()['True'][1:], 22)
+#%%
+plt.figure(figsize=(20,10))
+plt.plot(np.exp(model.covariates()['True'][1]).cumprod()), plt.plot(np.exp(model.covariates()['Noisy'][1]).cumprod())
+plt.plot(model.covariates()['Noisy'][1]-model.covariates()['True'][1])
+#%%
+
+
 # series_plot(next_day_returns.cumsum(),'')
 # CBOT_OATS_df = pd.read_csv('Data/Continuous Futures Series/CBOT Rough Rice.csv',
 #                            index_col = 0, skiprows = 0, skipfooter = 1, header = 1, engine = 'python')
@@ -124,7 +134,7 @@ def makeXy(comm_df, cur_df, nb_timesteps):
     test_y =  tf.convert_to_tensor(test_y, dtype='float64')
     
     return train_X, train_y, val_X, val_y, test_X, test_y
-lookback = 120
+lookback = 50
 X_train, y_train, X_val, y_val, X_test, y_test = makeXy(next_day_returns[1:], sim_currency[1:], lookback)
 print('Shape of train arrays:', X_train.shape, y_train.shape)
 #%%
@@ -167,7 +177,7 @@ save_best = ModelCheckpoint(save_weights_at, monitor='val_loss', verbose=0,
                             period=1)
 callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
 ts_model.fit(x=X_train, y=y_train, 
-             batch_size=32, epochs=20,
+             batch_size=32, epochs=10,
              verbose=True, callbacks=[callback], validation_data=(X_val, y_val),
              shuffle=False)
 
@@ -200,27 +210,27 @@ y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))
 
 ##%% 
 from plotting_functions import pred_truth_vis, return_series_vis    
-pred_truth_vis(model.covariates()['True'][lookback+1:6999][1].reset_index(drop=True), y_train_hat)
+pred_truth_vis(model.covariates()['True'][lookback+1:6999][1].reset_index(drop=True), y_train_hat, 22)
 # %%
 # return_series_vis(model.covariates()['True'][lookback+1:6999].reset_index(drop=True), y_train_hat)
-return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
-pred_truth_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat)
+return_series_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat,22)
+pred_truth_vis(model.covariates()['True'][lookback+9000:-1][1].reset_index(drop=True), y_test_hat, 22)
 
 #%%
-second_commods = pd.DataFrame(sim_commods[2])
-X_train, y_train, X_val, y_val, X_test, y_test = makeXy(second_commods[1:], sim_currency[1:], lookback)
-print('Shape of train arrays:', X_train.shape, y_train.shape)
+# second_commods = pd.DataFrame(sim_commods[2])
+# X_train, y_train, X_val, y_val, X_test, y_test = makeXy(second_commods[1:], sim_currency[1:], lookback)
+# print('Shape of train arrays:', X_train.shape, y_train.shape)
 
 
-preds = ts_model.predict(X_train)
-# pred_PRES = scaler.inverse_transform(preds)
-pred_PRES = np.squeeze(preds)
+# preds = ts_model.predict(X_train)
+# # pred_PRES = scaler.inverse_transform(preds)
+# pred_PRES = np.squeeze(preds)
 
-y_train_hat = np.array([pred[-1] for pred in pred_PRES])
-y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))])
-# y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
+# y_train_hat = np.array([pred[-1] for pred in pred_PRES])
+# y_test_hat = np.array([pred[-1] for pred in np.squeeze(ts_model.predict(X_test))])
+# # y_train_series = np.exp([i for i in next_day_returns[1][lookback+1:int(0.7*10000)]]).cumprod()
 
-# def lstm_pred_price_vis(y_pred, y_true):
+# # def lstm_pred_price_vis(y_pred, y_true):
     
 #     plt.figure(figsize=(20,10))    
 #     plt.title('Visualisation of LSTM Predictions')
